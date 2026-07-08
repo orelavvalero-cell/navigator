@@ -61,7 +61,7 @@
       cursor: pointer; box-shadow: 0 2px 12px var(--shadow); font-size: 22px; display: flex; align-items: center; justify-content: center;
     }
     #btn-voice.off { opacity: .45; }
-    #btn-3d.active { background: var(--accent); color: #fff; }
+    #btn-3d.active, #btn-sat.active { background: var(--accent); color: #fff; }
 
     /* Маркер «я» (стрелка направления) */
     .me-marker svg { display: block; filter: drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
@@ -134,6 +134,7 @@
 
   <div id="fabs">
     <button class="fab" id="btn-3d" title="3D-наклон">🏙️</button>
+    <button class="fab" id="btn-sat" title="Спутник">🛰️</button>
     <button class="fab" id="btn-theme" title="День / Ночь">🌙</button>
     <button class="fab" id="btn-voice" title="Голос">🔊</button>
     <button class="fab" id="btn-locate" title="Где я">🎯</button>
@@ -545,15 +546,40 @@
   renderFavs();
 
   // ============================================================
-  //                ТЕМА (день / ночь)
+  //          ТЕМА (день / ночь) и СПУТНИК (реальные снимки)
   // ============================================================
   const btnTheme = document.getElementById('btn-theme');
+  const btnSat = document.getElementById('btn-sat');
+  let satOn = false;
+
   btnTheme.textContent = night ? '☀️' : '🌙';
   btnTheme.onclick = () => {
     night = !night; localStorage.setItem('nav_night', night ? '1' : '0');
     document.body.classList.toggle('night', night);
     btnTheme.textContent = night ? '☀️' : '🌙';
+    satOn = false; btnSat.classList.remove('active');
     map.setStyle(night ? STYLE_NIGHT : STYLE_DAY);   // маршрут вернётся через событие style.load
+  };
+
+  // Спутниковые снимки Esri World Imagery (бесплатно, без ключа)
+  const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+  let satStyleCache = null;
+  async function satelliteStyle() {
+    if (satStyleCache) return satStyleCache;
+    const s = await (await fetch(STYLE_DAY)).json();   // берём стиль Liberty и превращаем в гибрид
+    // оставляем только подписи (symbol) и объёмные здания (fill-extrusion), убираем заливки, фон и линии
+    s.layers = s.layers.filter(l => l.type === 'symbol' || l.type === 'fill-extrusion');
+    // снимок кладём в самый низ
+    s.sources.satellite = { type: 'raster', tiles: [ESRI], tileSize: 256, maxzoom: 19, attribution: 'Esri, Maxar, Earthstar Geographics' };
+    s.layers.unshift({ id: 'satellite', type: 'raster', source: 'satellite' });
+    satStyleCache = s;
+    return s;
+  }
+  btnSat.onclick = async () => {
+    satOn = !satOn;
+    btnSat.classList.toggle('active', satOn);
+    if (satOn) map.setStyle(await satelliteStyle());
+    else map.setStyle(night ? STYLE_NIGHT : STYLE_DAY);
   };
 
   // Скрыть подсказку про наклон через несколько секунд / по клику
