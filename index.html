@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Мой Навигатор</title>
+
+  <!-- Leaflet: библиотека карты (бесплатно) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    /* ===== Цвета для дня и ночи (тёмная тема) ===== */
+    :root {
+      --panel: #ffffff; --panel-2: #f3f4f6; --text: #111827; --muted: #6b7280;
+      --border: #e5e7eb; --accent: #2563eb; --accent-press: #1d4ed8; --shadow: rgba(0,0,0,.2);
+      --good: #16a34a;
+    }
+    body.night {
+      --panel: #1f2430; --panel-2: #2a3140; --text: #e5e7eb; --muted: #9ca3af;
+      --border: #374151; --accent: #3b82f6; --accent-press: #2563eb; --shadow: rgba(0,0,0,.55);
+      --good: #22c55e;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    #map { position: absolute; inset: 0; z-index: 1; background: var(--panel-2); }
+
+    /* ===== Верхняя панель (поиск + чипсы) ===== */
+    #top-ui {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 1000;
+      padding: 12px; max-width: 680px; margin: 0 auto;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .search-bar { display: flex; gap: 8px; }
+    .search-bar input {
+      flex: 1; padding: 14px 16px; border: none; border-radius: 12px; font-size: 16px;
+      background: var(--panel); color: var(--text); box-shadow: 0 2px 12px var(--shadow); outline: none;
+    }
+    .search-bar input::placeholder { color: var(--muted); }
+    .search-bar button {
+      padding: 0 18px; border: none; border-radius: 12px; background: var(--accent);
+      color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 12px var(--shadow);
+    }
+    .search-bar button:active { background: var(--accent-press); }
+
+    /* Горизонтальные ряды кнопок-«чипсов» */
+    .chip-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+    .chip-row::-webkit-scrollbar { display: none; }
+    .chip {
+      flex: 0 0 auto; padding: 8px 14px; border: none; border-radius: 999px; cursor: pointer;
+      background: var(--panel); color: var(--text); font-size: 14px; font-weight: 500;
+      box-shadow: 0 2px 8px var(--shadow); white-space: nowrap; display: flex; align-items: center; gap: 6px;
+    }
+    .chip.active { background: var(--accent); color: #fff; }
+    .chip .x { opacity: .55; font-size: 12px; padding-left: 2px; }
+    .chip.add { border: 1px dashed var(--border); background: transparent; color: var(--muted); box-shadow: none; }
+
+    /* Список подсказок поиска */
+    .suggestions {
+      position: absolute; top: 62px; left: 12px; right: 12px; z-index: 1001;
+      max-width: 656px; margin: 0 auto; background: var(--panel); border-radius: 12px;
+      box-shadow: 0 4px 20px var(--shadow); overflow: hidden; display: none;
+    }
+    .suggestions div {
+      padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border);
+      font-size: 14px; color: var(--text);
+    }
+    .suggestions div:active { background: var(--panel-2); }
+
+    /* ===== Кнопки-кружки справа ===== */
+    #fabs {
+      position: absolute; right: 16px; bottom: 104px; z-index: 1000;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    body.route-open #fabs { bottom: 196px; }
+    body.navigating #fabs { bottom: 150px; }
+    .fab {
+      width: 52px; height: 52px; border: none; border-radius: 50%; background: var(--panel);
+      color: var(--text); cursor: pointer; box-shadow: 0 2px 12px var(--shadow); font-size: 22px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .fab:active { background: var(--panel-2); }
+    #btn-voice.off { opacity: .45; }
+
+    /* ===== Нижняя панель: план маршрута ===== */
+    .route-info {
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 1000; max-width: 680px; margin: 0 auto;
+      background: var(--panel); border-radius: 20px 20px 0 0; padding: 16px 20px 22px;
+      box-shadow: 0 -4px 20px var(--shadow); display: none;
+    }
+    .route-info .summary { display: flex; align-items: baseline; gap: 14px; }
+    .route-info .summary .big { font-size: 26px; font-weight: 700; color: var(--good); }
+    .route-info .summary .sub { color: var(--muted); font-size: 15px; }
+    .route-info .close, .route-info .fav-save {
+      position: absolute; top: 12px; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted);
+    }
+    .route-info .close { right: 14px; }
+    .route-info .fav-save { right: 48px; }
+    .modes { display: flex; gap: 8px; margin: 12px 0; }
+    .mode {
+      flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 12px; cursor: pointer;
+      background: var(--panel-2); color: var(--text); font-size: 20px;
+    }
+    .mode.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .start-btn {
+      width: 100%; padding: 14px; border: none; border-radius: 14px; background: var(--good);
+      color: #fff; font-size: 18px; font-weight: 700; cursor: pointer;
+    }
+    .start-btn:active { filter: brightness(.92); }
+
+    /* ===== Живая навигация: верхний баннер манёвра ===== */
+    #nav-banner {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 1000; max-width: 680px; margin: 0 auto;
+      background: var(--accent); color: #fff; padding: 16px 20px; border-radius: 0 0 18px 18px;
+      display: none; align-items: center; gap: 16px; box-shadow: 0 4px 20px var(--shadow);
+    }
+    #nav-banner .arrow { font-size: 42px; line-height: 1; min-width: 46px; text-align: center; }
+    #nav-banner .dist { font-size: 26px; font-weight: 800; }
+    #nav-banner .instr { font-size: 16px; opacity: .95; margin-top: 2px; }
+
+    /* Нижняя мини-панель во время навигации */
+    #nav-bottom {
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 1000; max-width: 680px; margin: 0 auto;
+      background: var(--panel); color: var(--text); padding: 14px 20px;
+      border-radius: 18px 18px 0 0; box-shadow: 0 -4px 20px var(--shadow);
+      display: none; align-items: center; justify-content: space-between; font-size: 17px; font-weight: 600;
+    }
+    #nav-bottom button {
+      padding: 10px 20px; border: none; border-radius: 12px; background: #ef4444; color: #fff;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+    }
+
+    body.navigating #top-ui, body.navigating .route-info { display: none !important; }
+    body.navigating #nav-banner { display: flex; }
+    body.navigating #nav-bottom { display: flex; }
+
+    /* ===== Всплывающее окно точки ===== */
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--text); }
+    .poi-popup { min-width: 190px; }
+    .poi-popup .title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .poi-popup .type  { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+    .poi-popup .addr  { font-size: 13px; color: var(--text); margin-bottom: 10px; line-height: 1.35; }
+    .poi-popup button {
+      width: 100%; padding: 10px; border: none; border-radius: 10px; margin-top: 6px;
+      background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    .poi-popup button.ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+
+    /* Значок точки — одноцветный чёрный маркер */
+    .poi-pin { background: none !important; border: none !important; }
+    .poi-pin svg { filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Верхняя панель -->
+  <div id="top-ui">
+    <div class="search-bar">
+      <input id="search" type="text" placeholder="Куда едем? Введите адрес…" autocomplete="off" />
+      <button id="btn-go">Поиск</button>
+    </div>
+    <div class="chip-row" id="fav-row"></div>
+    <div class="chip-row" id="filter-row">
+      <button class="chip active" data-filter="all">Все</button>
+      <button class="chip" data-filter="fuel">⛽ Заправки</button>
+      <button class="chip" data-filter="food">🍔 Еда</button>
+      <button class="chip" data-filter="shop">🛒 Магазины</button>
+      <button class="chip" data-filter="pharmacy">💊 Аптеки</button>
+    </div>
+  </div>
+  <div class="suggestions" id="suggestions"></div>
+
+  <!-- Кнопки-кружки -->
+  <div id="fabs">
+    <button class="fab" id="btn-theme" title="День / Ночь">🌙</button>
+    <button class="fab" id="btn-voice" title="Голосовые подсказки">🔊</button>
+    <button class="fab" id="btn-locate" title="Где я">🎯</button>
+  </div>
+
+  <!-- Верхний баннер живой навигации -->
+  <div id="nav-banner">
+    <div class="arrow" id="nav-arrow">↑</div>
+    <div>
+      <div class="dist" id="nav-dist">—</div>
+      <div class="instr" id="nav-instr">—</div>
+    </div>
+  </div>
+
+  <!-- План маршрута -->
+  <div class="route-info" id="route-info">
+    <button class="fav-save" id="btn-fav" title="Сохранить в избранное">⭐</button>
+    <button class="close" id="btn-close">✕</button>
+    <div class="summary">
+      <div class="big" id="route-time">—</div>
+      <div class="sub" id="route-dist">—</div>
+    </div>
+    <div class="modes" id="modes">
+      <button class="mode active" data-mode="auto">🚗</button>
+      <button class="mode" data-mode="pedestrian">🚶</button>
+      <button class="mode" data-mode="bicycle">🚴</button>
+    </div>
+    <button class="start-btn" id="btn-start">▶ Поехали</button>
+  </div>
+
+  <!-- Мини-панель во время навигации -->
+  <div id="nav-bottom">
+    <div><span id="nav-eta">—</span> · <span id="nav-remain">—</span></div>
+    <button id="btn-stop">Стоп</button>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Плагин поворота карты -->
+  <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
+  <script>
+  // ============================================================
+  //                        КАРТА
+  // ============================================================
+  const map = L.map('map', {
+    zoomControl: false,
+    rotate: true,          // поворот карты
+    touchRotate: true,     // на телефоне — двумя пальцами
+    shiftKeyRotate: true,  // на компьютере — Shift + мышь
+    bearing: 0,
+    rotateControl: { closeOnZeroBearing: false, position: 'bottomleft' }
+  }).setView([55.751244, 37.618423], 13);
+  L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+  // Слои карты: день (OSM) и ночь (CARTO Dark) — оба бесплатны
+  const dayLayer   = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { maxZoom: 19, attribution: '© OpenStreetMap' });
+  const nightLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+    { maxZoom: 20, subdomains: 'abcd', attribution: '© OpenStreetMap, © CARTO' });
+
+  const btnTheme = document.getElementById('btn-theme');
+  let night = localStorage.getItem('nav_night') === '1';
+  function applyTheme() {
+    if (night) { map.removeLayer(dayLayer); nightLayer.addTo(map); document.body.classList.add('night'); btnTheme.textContent = '☀️'; }
+    else       { map.removeLayer(nightLayer); dayLayer.addTo(map); document.body.classList.remove('night'); btnTheme.textContent = '🌙'; }
+  }
+  btnTheme.onclick = () => { night = !night; localStorage.setItem('nav_night', night ? '1' : '0'); applyTheme(); };
+  applyTheme();
+
+  // ============================================================
+  //                 МАТЕМАТИКА / УТИЛИТЫ
+  // ============================================================
+  // Расстояние между двумя точками в метрах
+  function distM(a, b) {
+    const R = 6371000, rad = Math.PI / 180;
+    const dLat = (b[0]-a[0])*rad, dLng = (b[1]-a[1])*rad;
+    const s = Math.sin(dLat/2)**2 + Math.cos(a[0]*rad)*Math.cos(b[0]*rad)*Math.sin(dLng/2)**2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+  // Азимут (курс) из точки a в точку b, 0..360
+  function bearingDeg(a, b) {
+    const rad = Math.PI/180, deg = 180/Math.PI;
+    const y = Math.sin((b[1]-a[1])*rad) * Math.cos(b[0]*rad);
+    const x = Math.cos(a[0]*rad)*Math.sin(b[0]*rad) - Math.sin(a[0]*rad)*Math.cos(b[0]*rad)*Math.cos((b[1]-a[1])*rad);
+    return (Math.atan2(y, x)*deg + 360) % 360;
+  }
+  // Декодирование геометрии маршрута Valhalla (точность 6)
+  function decodePolyline(str) {
+    let index = 0, lat = 0, lng = 0; const coords = [], factor = 1e6;
+    while (index < str.length) {
+      let shift = 0, result = 0, byte;
+      do { byte = str.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20);
+      lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+      shift = 0; result = 0;
+      do { byte = str.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20);
+      lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+      coords.push([lat/factor, lng/factor]);
+    }
+    return coords;
+  }
+  function fmtDist(m) { return m < 1000 ? Math.round(m/10)*10 + ' м' : (m/1000).toFixed(1) + ' км'; }
+  function fmtTime(s) { const m = Math.round(s/60); if (m < 60) return m + ' мин'; return Math.floor(m/60) + ' ч ' + (m%60) + ' мин'; }
+  function roundDistWords(m) { const d = m < 150 ? Math.round(m/50)*50 : Math.round(m/100)*100; return d + ' метров'; }
+  function lower1(s) { return s ? s.charAt(0).toLowerCase() + s.slice(1) : s; }
+  function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  // Стрелка манёвра по типу Valhalla
+  function arrowFor(t) {
+    if ([1,2,3].includes(t)) return '▶';
+    if ([4,5,6].includes(t)) return '⚑';           // прибытие
+    if (t === 9) return '↗';                         // плавно направо
+    if ([10,18,20,23,25].includes(t)) return '↱';   // направо / съезд направо
+    if (t === 11) return '↳';                        // резко направо
+    if ([12,13].includes(t)) return '⟲';            // разворот
+    if (t === 14) return '↰';                        // резко налево
+    if ([15,19,21,24].includes(t)) return '↰';      // налево / съезд налево
+    if (t === 16) return '↖';                        // плавно налево
+    if ([26,27].includes(t)) return '⟳';            // круговое движение
+    return '↑';                                      // прямо
+  }
+
+  // ============================================================
+  //                 МОЁ МЕСТОПОЛОЖЕНИЕ (GPS)
+  // ============================================================
+  let myPosition = null, myMarker = null, followMode = true;
+  let lastHeading = null, lastNavPos = null;
+
+  function updateMyMarker(lat, lng) {
+    myPosition = [lat, lng];
+    if (!myMarker) {
+      myMarker = L.circleMarker([lat, lng], { radius: 9, color: '#fff', weight: 3, fillColor: '#2563eb', fillOpacity: 1 }).addTo(map);
+    } else myMarker.setLatLng([lat, lng]);
+  }
+
+  if ('geolocation' in navigator) {
+    navigator.geolocation.watchPosition((pos) => {
+      const { latitude: lat, longitude: lng, heading, speed } = pos.coords;
+      const first = !myPosition;
+      updateMyMarker(lat, lng);
+
+      // Определяем курс: сначала из GPS, иначе — по направлению движения
+      let hd = (heading != null && !isNaN(heading) && (speed == null || speed > 0.5)) ? heading : null;
+      if (hd == null && lastNavPos && distM(lastNavPos, [lat, lng]) > 4) hd = bearingDeg(lastNavPos, [lat, lng]);
+      if (hd != null) lastHeading = hd;
+      lastNavPos = [lat, lng];
+
+      if (navActive) {
+        updateNav(lat, lng, lastHeading);
+      } else if (first || followMode) {
+        map.setView([lat, lng], first ? 16 : map.getZoom());
+      }
+    }, (err) => console.warn('GPS недоступен:', err.message),
+       { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
+  }
+
+  document.getElementById('btn-locate').onclick = () => { followMode = true; if (myPosition) map.setView(myPosition, 16); };
+  map.on('dragstart', () => { if (!navActive) followMode = false; });
+
+  // ============================================================
+  //                    ПОИСК АДРЕСА (Nominatim)
+  // ============================================================
+  const searchInput = document.getElementById('search');
+  const suggestionsBox = document.getElementById('suggestions');
+  let searchTimer = null;
+
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    const q = searchInput.value.trim();
+    if (q.length < 3) { suggestionsBox.style.display = 'none'; return; }
+    searchTimer = setTimeout(() => geocode(q), 400);
+  });
+  searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('btn-go').click(); });
+
+  async function geocode(query) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=ru&q=${encodeURIComponent(query)}`;
+      const data = await (await fetch(url)).json();
+      showSuggestions(data);
+    } catch (e) { console.error('Ошибка поиска:', e); }
+  }
+  function showSuggestions(items) {
+    if (!items.length) { suggestionsBox.style.display = 'none'; return; }
+    suggestionsBox.innerHTML = '';
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.textContent = item.display_name;
+      div.onclick = () => {
+        suggestionsBox.style.display = 'none';
+        searchInput.value = item.display_name.split(',')[0];
+        buildRoute(parseFloat(item.lat), parseFloat(item.lon));
+      };
+      suggestionsBox.appendChild(div);
+    });
+    suggestionsBox.style.display = 'block';
+  }
+  document.getElementById('btn-go').onclick = async () => {
+    const q = searchInput.value.trim();
+    if (q.length < 3) return;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=ru&q=${encodeURIComponent(q)}`;
+    const data = await (await fetch(url)).json();
+    if (data[0]) buildRoute(parseFloat(data[0].lat), parseFloat(data[0].lon));
+  };
+
+  // ============================================================
+  //          ПОСТРОЕНИЕ МАРШРУТА (Valhalla, бесплатно)
+  // ============================================================
+  let travelMode = 'auto';       // auto | pedestrian | bicycle
+  let destLatLng = null;         // точка назначения [lat, lng]
+  let currentRoute = null;       // { coords, maneuvers, distance, time }
+  let routeLine = null, destMarker = null;
+  const routeInfoBox = document.getElementById('route-info');
+
+  async function fetchRoute(from, to, mode) {
+    const body = {
+      locations: [ { lat: from[0], lon: from[1] }, { lat: to[0], lon: to[1] } ],
+      costing: mode,
+      directions_options: { language: 'ru-RU', units: 'kilometers' }
+    };
+    const url = 'https://valhalla1.openstreetmap.de/route?json=' + encodeURIComponent(JSON.stringify(body));
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+  function parseRoute(data) {
+    const leg = data.trip.legs[0];
+    return {
+      coords: decodePolyline(leg.shape),
+      maneuvers: leg.maneuvers.map(m => ({
+        i0: m.begin_shape_index, i1: m.end_shape_index,
+        text: (m.instruction || '').trim(), dist: (m.length || 0) * 1000, type: m.type || 0
+      })),
+      distance: data.trip.summary.length * 1000,
+      time: data.trip.summary.time
+    };
+  }
+
+  async function buildRoute(lat, lng, opts = {}) {
+    if (!myPosition) { alert('Сначала определите ваше местоположение (разрешите доступ к GPS).'); return false; }
+    destLatLng = [lat, lng];
+    try {
+      const data = await fetchRoute(myPosition, destLatLng, travelMode);
+      if (!data.trip || !data.trip.legs || !data.trip.legs.length) throw new Error('нет маршрута');
+      currentRoute = parseRoute(data);
+      drawRoute();
+      if (!opts.silent) showRoutePlan();
+      return true;
+    } catch (e) {
+      console.error(e);
+      if (!opts.silent) alert('Не удалось построить маршрут. Попробуйте другую точку или режим.');
+      return false;
+    }
+  }
+  function drawRoute() {
+    if (routeLine) map.removeLayer(routeLine);
+    routeLine = L.polyline(currentRoute.coords, { color: '#2563eb', weight: 7, opacity: .85 }).addTo(map);
+    if (destMarker) map.removeLayer(destMarker);
+    destMarker = L.marker(destLatLng).addTo(map);
+    if (!navActive) map.fitBounds(routeLine.getBounds(), { padding: [70, 70] });
+  }
+  function showRoutePlan() {
+    document.getElementById('route-time').textContent = fmtTime(currentRoute.time);
+    document.getElementById('route-dist').textContent = fmtDist(currentRoute.distance);
+    document.querySelectorAll('#modes .mode').forEach(c => c.classList.toggle('active', c.dataset.mode === travelMode));
+    document.body.classList.add('route-open');
+    routeInfoBox.style.display = 'block';
+  }
+  function clearRoute() {
+    if (routeLine) { map.removeLayer(routeLine); routeLine = null; }
+    if (destMarker) { map.removeLayer(destMarker); destMarker = null; }
+    currentRoute = null; destLatLng = null;
+    document.body.classList.remove('route-open');
+    routeInfoBox.style.display = 'none';
+  }
+
+  // Переключение режима (машина / пешком / велосипед) — маршрут перестраивается
+  document.getElementById('modes').addEventListener('click', async (e) => {
+    const b = e.target.closest('.mode'); if (!b || !destLatLng) return;
+    travelMode = b.dataset.mode;
+    document.querySelectorAll('#modes .mode').forEach(c => c.classList.toggle('active', c === b));
+    document.getElementById('route-time').textContent = '…';
+    await buildRoute(destLatLng[0], destLatLng[1]);
+  });
+  document.getElementById('btn-close').onclick = clearRoute;
+
+  // ============================================================
+  //                 ГОЛОСОВЫЕ ПОДСКАЗКИ
+  // ============================================================
+  let voiceOn = true;
+  function speak(text) {
+    if (!voiceOn || !('speechSynthesis' in window)) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ru-RU';
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  }
+  const btnVoice = document.getElementById('btn-voice');
+  btnVoice.onclick = () => {
+    voiceOn = !voiceOn;
+    btnVoice.classList.toggle('off', !voiceOn);
+    btnVoice.textContent = voiceOn ? '🔊' : '🔇';
+    if (!voiceOn) speechSynthesis.cancel();
+  };
+
+  // ============================================================
+  //             ЖИВАЯ ПОШАГОВАЯ НАВИГАЦИЯ
+  // ============================================================
+  let navActive = false, navSpoken = {}, offRouteCount = 0;
+  const navArrow = document.getElementById('nav-arrow');
+  const navInstr = document.getElementById('nav-instr');
+  const navDist  = document.getElementById('nav-dist');
+  const navEta   = document.getElementById('nav-eta');
+  const navRemain = document.getElementById('nav-remain');
+
+  document.getElementById('btn-start').onclick = () => {
+    if (!currentRoute) return;
+    navActive = true; navSpoken = {}; offRouteCount = 0;
+    document.body.classList.remove('route-open');
+    document.body.classList.add('navigating');
+    poiLayer.clearLayers();
+    speak('Начинаем движение');           // клик разблокирует голос в браузере
+    if (myPosition) { map.setView(myPosition, 17); updateNav(myPosition[0], myPosition[1], lastHeading); }
+  };
+  document.getElementById('btn-stop').onclick = stopNav;
+
+  function stopNav() {
+    navActive = false;
+    document.body.classList.remove('navigating');
+    speechSynthesis && speechSynthesis.cancel();
+    map.setBearing(0);
+    clearRoute();
+  }
+
+  function updateNav(lat, lng, heading) {
+    if (!currentRoute) return;
+    const pos = [lat, lng], coords = currentRoute.coords, ms = currentRoute.maneuvers;
+
+    // Ближайшая точка маршрута
+    let ni = 0, dmin = Infinity;
+    for (let i = 0; i < coords.length; i++) { const d = distM(pos, coords[i]); if (d < dmin) { dmin = d; ni = i; } }
+
+    // Сбились с маршрута? — пересчитать
+    if (dmin > 45) { if (++offRouteCount >= 3) { offRouteCount = 0; recalc(); return; } }
+    else offRouteCount = 0;
+
+    // Сколько осталось до конца
+    let remain = distM(pos, coords[ni]);
+    for (let i = ni; i < coords.length - 1; i++) remain += distM(coords[i], coords[i+1]);
+    const remainTime = currentRoute.distance > 0 ? currentRoute.time * (remain / currentRoute.distance) : 0;
+
+    if (remain < 25) { arrive(); return; }
+
+    // Текущий сегмент и следующий манёвр
+    let k = 0;
+    for (let j = 0; j < ms.length; j++) if (ni >= ms[j].i0) k = j;
+    const nextIdx = Math.min(k + 1, ms.length - 1);
+    const next = ms[nextIdx];
+
+    // Расстояние до следующего поворота (вдоль маршрута)
+    let dTurn = distM(pos, coords[ni]);
+    for (let i = ni; i < next.i0 && i < coords.length - 1; i++) dTurn += distM(coords[i], coords[i+1]);
+
+    // Обновляем баннер
+    navArrow.textContent = arrowFor(next.type);
+    navInstr.textContent = next.text;
+    navDist.textContent  = fmtDist(dTurn);
+    navEta.textContent   = fmtTime(remainTime);
+    navRemain.textContent = fmtDist(remain);
+
+    // Голос
+    handleVoice(nextIdx, next, dTurn);
+
+    // Камера следует за нами и поворачивается по ходу движения
+    map.setView(pos, map.getZoom() < 15 ? 17 : map.getZoom(), { animate: true, duration: 0.5 });
+    if (heading != null && !isNaN(heading)) map.setBearing((360 - heading) % 360);
+  }
+
+  function handleVoice(idx, man, dTurn) {
+    const st = navSpoken[idx] || (navSpoken[idx] = {});
+    if (dTurn <= 60 && !st.near) { st.near = true; speak(man.text); return; }
+    if (dTurn <= 350 && dTurn > 90 && !st.far) { st.far = true; speak('Через ' + roundDistWords(dTurn) + ', ' + lower1(man.text)); }
+  }
+  function arrive() {
+    speak('Вы прибыли на место');
+    navInstr.textContent = 'Вы на месте'; navArrow.textContent = '⚑'; navDist.textContent = '';
+    setTimeout(stopNav, 2500);
+  }
+  async function recalc() {
+    speak('Перестраиваю маршрут');
+    await buildRoute(destLatLng[0], destLatLng[1], { silent: true });
+    navSpoken = {};
+  }
+
+  // ============================================================
+  //            КЛИК ПО КАРТЕ → ИНФО О МЕСТЕ
+  // ============================================================
+  window.routeToPoint = function (lat, lng) { map.closePopup(); buildRoute(lat, lng); };
+  window.saveFavPoint = function (lat, lng) { map.closePopup(); askSaveFav(lat, lng); };
+
+  function formatAddress(a) {
+    if (!a) return '';
+    return [
+      [a.road, a.house_number].filter(Boolean).join(', '),
+      a.suburb || a.city_district,
+      a.city || a.town || a.village
+    ].filter(Boolean).join(', ');
+  }
+  function placePopupHtml(title, addr, lat, lng) {
+    return `<div class="poi-popup">
+        <div class="title">${escapeHtml(title)}</div>
+        ${addr ? `<div class="addr">${escapeHtml(addr)}</div>` : ''}
+        <button onclick="routeToPoint(${lat}, ${lng})">🚗 Проложить маршрут</button>
+        <button class="ghost" onclick="saveFavPoint(${lat}, ${lng})">⭐ В избранное</button>
+      </div>`;
+  }
+
+  map.on('click', async (e) => {
+    if (navActive) return;
+    const { lat, lng } = e.latlng;
+    const popup = L.popup().setLatLng(e.latlng)
+      .setContent('<div class="poi-popup"><div class="type">Загружаю…</div></div>').openOn(map);
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru&zoom=18`;
+      const d = await (await fetch(url)).json();
+      const title = d.name || d.address?.road || 'Точка на карте';
+      popup.setContent(placePopupHtml(title, formatAddress(d.address) || d.display_name || '', lat, lng));
+    } catch (err) {
+      popup.setContent(placePopupHtml('Точка на карте', '', lat, lng));
+    }
+  });
+
+  // ============================================================
+  //        ИЗБРАННЫЕ МЕСТА (Дом, Работа…) — localStorage
+  // ============================================================
+  const favRow = document.getElementById('fav-row');
+  function loadFavs() { try { return JSON.parse(localStorage.getItem('nav_favs')) || []; } catch (e) { return []; } }
+  function saveFavs(f) { localStorage.setItem('nav_favs', JSON.stringify(f)); }
+  function renderFavs() {
+    const favs = loadFavs(); favRow.innerHTML = '';
+    favs.forEach((f, i) => {
+      const chip = document.createElement('button');
+      chip.className = 'chip';
+      chip.innerHTML = '⭐ ' + escapeHtml(f.name) + ' <span class="x">✕</span>';
+      chip.onclick = (e) => {
+        if (e.target.classList.contains('x')) delFav(i);
+        else buildRoute(f.lat, f.lng);
+      };
+      favRow.appendChild(chip);
+    });
+    const add = document.createElement('button');
+    add.className = 'chip add'; add.textContent = '＋ Сюда';
+    add.title = 'Сохранить центр карты в избранное';
+    add.onclick = () => { const c = map.getCenter(); askSaveFav(c.lat, c.lng); };
+    favRow.appendChild(add);
+  }
+  function askSaveFav(lat, lng) {
+    const name = prompt('Название места (например: Дом, Работа, Дача):');
+    if (!name || !name.trim()) return;
+    const favs = loadFavs(); favs.push({ name: name.trim(), lat, lng }); saveFavs(favs); renderFavs();
+  }
+  function delFav(i) { const favs = loadFavs(); favs.splice(i, 1); saveFavs(favs); renderFavs(); }
+  document.getElementById('btn-fav').onclick = () => { if (destLatLng) askSaveFav(destLatLng[0], destLatLng[1]); };
+  renderFavs();
+
+  // ============================================================
+  //     РЕАЛЬНЫЕ ТОЧКИ (кафе, магазины…) + ФИЛЬТР — Overpass
+  // ============================================================
+  const poiLayer = L.layerGroup().addTo(map);
+  let poiTimer = null, poiFilter = 'all';
+
+  const blackPin = L.divIcon({
+    className: 'poi-pin',
+    html: '<svg width="24" height="30" viewBox="0 0 24 30">' +
+          '<path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 18 12 18s12-9 12-18C24 5.4 18.6 0 12 0z" fill="#111"/>' +
+          '<circle cx="12" cy="12" r="4.2" fill="#fff"/></svg>',
+    iconSize: [24, 30], iconAnchor: [12, 30], popupAnchor: [0, -28]
+  });
+
+  function poiTypeName(tags) {
+    const m = { cafe:'Кафе', restaurant:'Ресторан', fast_food:'Фастфуд', bar:'Бар', pub:'Паб',
+      pharmacy:'Аптека', hospital:'Больница', clinic:'Клиника', school:'Школа', university:'Университет',
+      kindergarten:'Детский сад', fuel:'Заправка', bank:'Банк', atm:'Банкомат', ice_cream:'Мороженое' };
+    const s = { supermarket:'Супермаркет', convenience:'Продукты', bakery:'Пекарня', clothes:'Одежда' };
+    return m[tags.amenity] || s[tags.shop] || (tags.shop ? 'Магазин' : 'Место');
+  }
+  function overpassFilter(bbox) {
+    switch (poiFilter) {
+      case 'fuel':     return `node["amenity"="fuel"](${bbox});`;
+      case 'food':     return `node["amenity"~"cafe|restaurant|fast_food|bar|pub|ice_cream"](${bbox});`;
+      case 'shop':     return `node["shop"](${bbox});`;
+      case 'pharmacy': return `node["amenity"="pharmacy"](${bbox});`;
+      default:         return `node["amenity"](${bbox});node["shop"](${bbox});`;
+    }
+  }
+
+  document.getElementById('filter-row').addEventListener('click', (e) => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    poiFilter = b.dataset.filter;
+    document.querySelectorAll('#filter-row .chip').forEach(c => c.classList.toggle('active', c === b));
+    loadPOIs();
+  });
+
+  async function loadPOIs() {
+    if (navActive) return;                              // во время навигации не грузим
+    if (map.getZoom() < 16) { poiLayer.clearLayers(); return; }
+    const b = map.getBounds();
+    const bbox = `${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()}`;
+    const query = `[out:json][timeout:20];(${overpassFilter(bbox)});out body 80;`;
+    try {
+      const res = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: 'data=' + encodeURIComponent(query) });
+      const data = await res.json();
+      poiLayer.clearLayers();
+      data.elements.forEach(el => {
+        if (!el.lat || !el.lon || !el.tags) return;
+        const name = el.tags.name || poiTypeName(el.tags);
+        L.marker([el.lat, el.lon], { icon: blackPin }).addTo(poiLayer)
+          .bindPopup(`<div class="poi-popup">
+              <div class="title">${escapeHtml(name)}</div>
+              <div class="type">${poiTypeName(el.tags)}</div>
+              <button onclick="routeToPoint(${el.lat}, ${el.lon})">🚗 Проложить маршрут</button>
+              <button class="ghost" onclick="saveFavPoint(${el.lat}, ${el.lon})">⭐ В избранное</button>
+            </div>`);
+      });
+    } catch (err) { console.warn('Не удалось загрузить точки:', err); }
+  }
+
+  map.on('moveend', () => { clearTimeout(poiTimer); poiTimer = setTimeout(loadPOIs, 600); });
+  </script>
+</body>
+</html>
