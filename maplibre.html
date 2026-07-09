@@ -168,8 +168,14 @@
     .auth-tab.active { background: var(--accent); color: #fff; }
     .auth-card input { padding: 13px 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 16px; background: var(--panel); color: var(--text); outline: none; }
     .auth-error { color: #ef4444; font-size: 14px; min-height: 18px; }
-    #auth-submit { padding: 13px; border: none; border-radius: 12px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
-    #auth-submit:hover { background: var(--accent-press); }
+    .auth-head { text-align: center; margin-bottom: 8px; }
+    .auth-head svg { width: 40px; height: 40px; }
+    .auth-head h3 { font-size: 20px; font-weight: 800; margin: 8px 0 4px; color: var(--text); }
+    .auth-head p { font-size: 14px; color: var(--muted); line-height: 1.4; }
+    .gbtn { display: flex; justify-content: center; margin: 6px 0; min-height: 44px; }
+    .auth-guest { background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer; text-decoration: underline; padding: 6px; align-self: center; }
+    .auth-guest:hover { color: var(--text); }
+    .lp-avatar { width: 26px; height: 26px; border-radius: 50%; vertical-align: middle; margin-right: 8px; border: 1px solid rgba(255,255,255,.4); }
   </style>
 </head>
 <body>
@@ -206,19 +212,18 @@
     <footer class="lp-footer">Карты © OpenStreetMap · Снимки © Esri · Маршруты Valhalla</footer>
   </div>
 
-  <!-- ===== Окно регистрации / входа ===== -->
+  <!-- ===== Окно входа через Google ===== -->
   <div id="auth-modal">
     <div class="auth-card">
       <button class="auth-close" id="auth-close">✕</button>
-      <div class="auth-tabs">
-        <button class="auth-tab active" data-tab="register">Регистрация</button>
-        <button class="auth-tab" data-tab="login">Вход</button>
+      <div class="auth-head">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2C7.6 2 4 5.6 4 10c0 5.7 8 12 8 12s8-6.3 8-12c0-4.4-3.6-8-8-8z" fill="#2563eb" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="10" r="3" fill="#fff"/></svg>
+        <h3>Вход в Geo Point</h3>
+        <p>Войдите через Google — сохраним ваше имя и настройки.</p>
       </div>
-      <input id="auth-name" type="text" placeholder="Имя" autocomplete="name" />
-      <input id="auth-email" type="email" placeholder="Почта (email)" autocomplete="email" />
-      <input id="auth-pass" type="password" placeholder="Пароль" autocomplete="current-password" />
+      <div id="gbtn" class="gbtn"></div>
       <div id="auth-error" class="auth-error"></div>
-      <button id="auth-submit" class="btn-primary">Зарегистрироваться</button>
+      <button id="btn-guest" class="auth-guest">Продолжить без входа</button>
     </div>
   </div>
 
@@ -265,6 +270,7 @@
 
   <div id="tip">👉 Наклоните карту для 3D: <b>правой кнопкой мыши</b> (или двумя пальцами на телефоне)</div>
 
+  <script src="https://accounts.google.com/gsi/client" async></script>
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script>
   // ============================================================
@@ -725,15 +731,14 @@
   // ============================================================
   //        ЗАСТАВКА GEO POINT + АККАУНТ (локально в браузере)
   // ============================================================
-  // Пароль храним не в открытом виде, а как SHA-256 хэш
-  async function hashPass(pass) {
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('geopoint::' + pass));
-    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  // Аккаунт через Google. Профиль (имя/почта/аватар) берём из ID-токена и храним локально.
+  const GOOGLE_CLIENT_ID = '415809495526-7uev7l6nihvf4nmh4mmjevp93vs1kiv2.apps.googleusercontent.com';
+  const currentUser = () => { try { return JSON.parse(localStorage.getItem('gp_user')) || null; } catch { return null; } };
+  function decodeJwt(token) {
+    const p = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(atob(p).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    return JSON.parse(json);
   }
-  const getUsers = () => { try { return JSON.parse(localStorage.getItem('gp_users')) || {}; } catch { return {}; } };
-  const setUsers = (u) => localStorage.setItem('gp_users', JSON.stringify(u));
-  const getSession = () => localStorage.getItem('gp_session');
-  const currentUser = () => { const s = getSession(); if (!s) return null; const u = getUsers()[s]; return u ? { email: s, name: u.name } : null; };
 
   const landing = document.getElementById('landing');
   const greet = document.getElementById('greet');
@@ -744,14 +749,16 @@
     const loginBtn = document.getElementById('btn-auth-open');
     const regBtn = document.getElementById('btn-auth-open2');
     if (u) {
-      greet.innerHTML = 'С возвращением, <b>' + escapeHtml(u.name.split(' ')[0]) + '</b>';
+      const first = escapeHtml((u.name || u.email || '').split(' ')[0]);
+      const av = u.picture ? '<img class="lp-avatar" src="' + u.picture + '" alt="" referrerpolicy="no-referrer">' : '';
+      greet.innerHTML = av + 'С возвращением, <b>' + first + '</b>';
       loginBtn.textContent = 'Выйти';
-      loginBtn.onclick = () => { localStorage.removeItem('gp_session'); refreshGreet(); };
+      loginBtn.onclick = () => signOut();
       if (regBtn) regBtn.style.display = 'none';
     } else {
       greet.textContent = '';
       loginBtn.textContent = 'Войти';
-      loginBtn.onclick = () => { setAuthMode('login'); authModal.classList.add('open'); };
+      loginBtn.onclick = () => openAuth();
       if (regBtn) regBtn.style.display = '';
     }
   }
@@ -785,49 +792,42 @@
   }
   btnEnter.onclick = enterApp;
 
-  // --- окно регистрации / входа ---
+  // --- окно входа через Google ---
   const authModal = document.getElementById('auth-modal');
-  const authTabs = document.querySelectorAll('.auth-tab');
-  const authName = document.getElementById('auth-name');
-  const authEmail = document.getElementById('auth-email');
-  const authPass = document.getElementById('auth-pass');
   const authError = document.getElementById('auth-error');
-  const authSubmit = document.getElementById('auth-submit');
-  let authMode = 'register';
-
-  function setAuthMode(m) {
-    authMode = m;
-    authTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === m));
-    authName.style.display = m === 'register' ? 'block' : 'none';
-    authSubmit.textContent = m === 'register' ? 'Зарегистрироваться' : 'Войти';
-    authError.textContent = '';
-  }
-  authTabs.forEach(t => t.onclick = () => setAuthMode(t.dataset.tab));
-  document.getElementById('btn-auth-open2').onclick = () => { setAuthMode('register'); authModal.classList.add('open'); };
+  function openAuth() { authError.textContent = ''; authModal.classList.add('open'); }
+  document.getElementById('btn-auth-open2').onclick = openAuth;
   document.getElementById('auth-close').onclick = () => authModal.classList.remove('open');
   authModal.onclick = (e) => { if (e.target === authModal) authModal.classList.remove('open'); };
-  authPass.addEventListener('keydown', e => { if (e.key === 'Enter') authSubmit.click(); });
+  document.getElementById('btn-guest').onclick = () => { authModal.classList.remove('open'); enterApp(); };
 
-  authSubmit.onclick = async () => {
-    const name = authName.value.trim(), email = authEmail.value.trim().toLowerCase(), pass = authPass.value;
-    authError.textContent = '';
-    if (!email || !pass) { authError.textContent = 'Заполните почту и пароль'; return; }
-    const users = getUsers();
-    if (authMode === 'register') {
-      if (!name) { authError.textContent = 'Введите имя'; return; }
-      if (pass.length < 4) { authError.textContent = 'Пароль минимум 4 символа'; return; }
-      if (users[email]) { authError.textContent = 'Такая почта уже есть — войдите'; return; }
-      users[email] = { name, pass: await hashPass(pass) };
-      setUsers(users); localStorage.setItem('gp_session', email);
-    } else {
-      const u = users[email];
-      if (!u || u.pass !== await hashPass(pass)) { authError.textContent = 'Неверная почта или пароль'; return; }
-      localStorage.setItem('gp_session', email);
-    }
-    authModal.classList.remove('open');
-    authName.value = authEmail.value = authPass.value = '';
+  function signOut() {
+    localStorage.removeItem('gp_user');
+    try { google.accounts.id.disableAutoSelect(); } catch (e) {}
     refreshGreet();
-  };
+  }
+
+  // Ответ Google: раскодируем ID-токен и сохраняем профиль
+  function onGoogleCredential(resp) {
+    try {
+      const p = decodeJwt(resp.credential);
+      localStorage.setItem('gp_user', JSON.stringify({ name: p.name, email: p.email, picture: p.picture, sub: p.sub }));
+      authModal.classList.remove('open');
+      refreshGreet();
+    } catch (e) { authError.textContent = 'Не удалось войти. Попробуйте ещё раз.'; }
+  }
+
+  // Инициализация Google Identity Services (ждём загрузку библиотеки accounts.google.com/gsi)
+  let gbtnRendered = false;
+  function initGoogle() {
+    if (!(window.google && google.accounts && google.accounts.id)) { setTimeout(initGoogle, 200); return; }
+    google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: onGoogleCredential, auto_select: false });
+    if (!gbtnRendered) {
+      const el = document.getElementById('gbtn');
+      if (el) { google.accounts.id.renderButton(el, { theme: 'filled_blue', size: 'large', shape: 'pill', text: 'continue_with', logo_alignment: 'left', locale: 'ru', width: 300 }); gbtnRendered = true; }
+    }
+  }
+  initGoogle();
   </script>
 </body>
 </html>
