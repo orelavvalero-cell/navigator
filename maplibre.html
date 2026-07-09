@@ -119,29 +119,41 @@
       text-align: center; transition: opacity .5s; box-shadow: 0 4px 20px rgba(0,0,0,.3);
     }
 
-    /* ===== Заставка входа ===== */
+    /* ===== Лендинг Geo Point ===== */
     #landing {
-      position: absolute; inset: 0; z-index: 3000; color: #fff; text-align: center;
-      background: linear-gradient(180deg, rgba(8,13,30,.5), rgba(8,13,30,.82)), url('bg.jpg') center/cover no-repeat;
-      display: flex; align-items: center; justify-content: center; padding: 24px; transition: opacity .5s;
+      position: absolute; inset: 0; z-index: 3000; overflow: hidden; color: #fff; background: #04060f;
+      display: flex; flex-direction: column; transition: opacity .6s ease;
     }
     #landing.hidden { opacity: 0; pointer-events: none; }
-    .landing-inner { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 30px; }
-    .brand .logo { font-size: 60px; }
-    .brand h1 { font-size: 46px; font-weight: 800; letter-spacing: .5px; margin-top: 4px; text-shadow: 0 2px 24px rgba(0,0,0,.55); }
-    .brand .tagline { color: #cbd5e1; font-size: 17px; margin-top: 6px; }
-    .landing-actions { display: flex; flex-direction: column; gap: 12px; }
-    .btn-primary {
-      padding: 16px; border: none; border-radius: 14px; background: #2563eb; color: #fff;
-      font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 8px 24px rgba(37,99,235,.45);
+    .lp-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .8s ease; }
+    #lp-v1 { opacity: 1; }
+    .lp-overlay {
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(90deg, rgba(4,7,16,.9) 0%, rgba(4,7,16,.62) 46%, rgba(4,7,16,.28) 100%),
+        linear-gradient(0deg, rgba(4,7,16,.85) 0%, rgba(4,7,16,.08) 46%);
     }
-    .btn-primary:active { background: #1d4ed8; }
-    .btn-secondary {
-      padding: 14px; border: 1.5px solid rgba(255,255,255,.5); border-radius: 14px;
-      background: rgba(255,255,255,.1); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
-    }
-    .greet { color: #e2e8f0; font-size: 15px; min-height: 20px; }
-    .greet a { color: #93c5fd; cursor: pointer; text-decoration: underline; }
+    .lp-header, .lp-hero, .lp-footer { position: relative; z-index: 2; }
+    .lp-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; }
+    .lp-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; letter-spacing: .2px; }
+    .lp-brand svg { width: 26px; height: 26px; display: block; }
+    .lp-login { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.28); color: #fff;
+      padding: 9px 20px; border-radius: 10px; font-weight: 600; font-size: 15px; cursor: pointer; }
+    .lp-login:hover { background: rgba(255,255,255,.2); }
+    .lp-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 24px; }
+    .lp-hero-inner { max-width: 620px; }
+    .lp-kicker { text-transform: uppercase; letter-spacing: 2.5px; font-size: 13px; font-weight: 700; color: #7dd3fc; margin-bottom: 16px; }
+    .lp-hero h1 { font-size: clamp(32px, 6vw, 58px); line-height: 1.06; font-weight: 800; letter-spacing: -.5px; margin-bottom: 18px; text-shadow: 0 2px 30px rgba(0,0,0,.45); }
+    .lp-hero p { font-size: clamp(16px, 2.3vw, 20px); line-height: 1.5; color: #d7e0ee; max-width: 520px; margin-bottom: 28px; }
+    .lp-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+    .lp-btn-primary { background: #2563eb; color: #fff; border: none; padding: 15px 30px; border-radius: 12px; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 12px 34px rgba(37,99,235,.5); }
+    .lp-btn-primary:hover { background: #1d4ed8; }
+    .lp-btn-ghost { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.32); padding: 15px 26px; border-radius: 12px; font-size: 17px; font-weight: 600; cursor: pointer; }
+    .lp-btn-ghost:hover { background: rgba(255,255,255,.18); }
+    .lp-greet { margin-top: 18px; color: #cbd5e1; font-size: 15px; min-height: 20px; }
+    .lp-greet b { color: #fff; }
+    .lp-footer { padding: 16px 24px; color: rgba(255,255,255,.55); font-size: 13px; }
+    @media (max-width: 560px) { .lp-cta { flex-direction: column; align-items: stretch; } .lp-btn-primary, .lp-btn-ghost { width: 100%; text-align: center; } }
 
     /* ===== Окно регистрации / входа ===== */
     #auth-modal { position: absolute; inset: 0; z-index: 3100; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 20px; }
@@ -156,23 +168,42 @@
     .auth-tab.active { background: var(--accent); color: #fff; }
     .auth-card input { padding: 13px 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 16px; background: var(--panel); color: var(--text); outline: none; }
     .auth-error { color: #ef4444; font-size: 14px; min-height: 18px; }
+    #auth-submit { padding: 13px; border: none; border-radius: 12px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+    #auth-submit:hover { background: var(--accent-press); }
   </style>
 </head>
 <body>
-  <!-- ===== Заставка входа Geo Point ===== -->
+  <!-- ===== Лендинг Geo Point ===== -->
   <div id="landing">
-    <div class="landing-inner">
-      <div class="brand">
-        <div class="logo">📍</div>
-        <h1>Geo Point</h1>
-        <p class="tagline">Бесплатный 3D-навигатор</p>
+    <!-- фоновое видео (два слоя для бесшовного кроссфейд-лупа) -->
+    <video id="lp-v1" class="lp-video" muted autoplay playsinline preload="auto" poster="landing-poster.jpg" src="landing.mp4"></video>
+    <video id="lp-v2" class="lp-video" muted playsinline preload="auto" poster="landing-poster.jpg" src="landing.mp4"></video>
+    <div class="lp-overlay"></div>
+
+    <header class="lp-header">
+      <div class="lp-brand">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2C7.6 2 4 5.6 4 10c0 5.7 8 12 8 12s8-6.3 8-12c0-4.4-3.6-8-8-8z" fill="#2563eb" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="10" r="3" fill="#fff"/></svg>
+        <span>Geo Point</span>
       </div>
-      <div class="landing-actions">
-        <button id="btn-enter" class="btn-primary">🚀 Начнём путешествие!</button>
-        <button id="btn-auth-open" class="btn-secondary">Регистрация / Вход</button>
+      <nav class="lp-nav">
+        <button id="btn-auth-open" class="lp-login">Войти</button>
+      </nav>
+    </header>
+
+    <main class="lp-hero">
+      <div class="lp-hero-inner">
+        <div class="lp-kicker">Бесплатный 3D-навигатор</div>
+        <h1>Прокладывайте маршруты<br>по всему миру</h1>
+        <p>3D-карты, спутник, живая навигация с голосом и поиск мест — прямо в браузере, без установки и без оплаты.</p>
+        <div class="lp-cta">
+          <button id="btn-enter" class="lp-btn-primary">Открыть карту</button>
+          <button id="btn-auth-open2" class="lp-btn-ghost">Создать аккаунт</button>
+        </div>
+        <div id="greet" class="lp-greet"></div>
       </div>
-      <div id="greet" class="greet"></div>
-    </div>
+    </main>
+
+    <footer class="lp-footer">Карты © OpenStreetMap · Снимки © Esri · Маршруты Valhalla</footer>
   </div>
 
   <!-- ===== Окно регистрации / входа ===== -->
@@ -710,20 +741,44 @@
 
   function refreshGreet() {
     const u = currentUser();
+    const loginBtn = document.getElementById('btn-auth-open');
+    const regBtn = document.getElementById('btn-auth-open2');
     if (u) {
-      greet.innerHTML = 'Вы вошли как <b>' + escapeHtml(u.name) + '</b> · <a id="logout-link">выйти</a>';
-      document.getElementById('logout-link').onclick = () => { localStorage.removeItem('gp_session'); refreshGreet(); };
-      btnEnter.textContent = '🚀 Продолжить, ' + escapeHtml(u.name.split(' ')[0]) + '!';
+      greet.innerHTML = 'С возвращением, <b>' + escapeHtml(u.name.split(' ')[0]) + '</b>';
+      loginBtn.textContent = 'Выйти';
+      loginBtn.onclick = () => { localStorage.removeItem('gp_session'); refreshGreet(); };
+      if (regBtn) regBtn.style.display = 'none';
     } else {
-      greet.textContent = 'Регистрация не обязательна — можно сразу в путь';
-      btnEnter.textContent = '🚀 Начнём путешествие!';
+      greet.textContent = '';
+      loginBtn.textContent = 'Войти';
+      loginBtn.onclick = () => { setAuthMode('login'); authModal.classList.add('open'); };
+      if (regBtn) regBtn.style.display = '';
     }
   }
   refreshGreet();
 
+  // ---- Фоновое видео с бесшовным кроссфейд-лупом ----
+  const lpVideos = [document.getElementById('lp-v1'), document.getElementById('lp-v2')];
+  let lpCur = 0, lpFading = false, lpRAF = null;
+  const LP_FADE = 0.8;   // длительность плавного перехода, сек
+  function lpLoop() {
+    const v = lpVideos[lpCur];
+    if (!lpFading && v.duration && (v.duration - v.currentTime) <= LP_FADE) {
+      lpFading = true;
+      const nx = 1 - lpCur, nv = lpVideos[nx];
+      nv.currentTime = 0; nv.play().catch(() => {});
+      nv.style.opacity = '1'; v.style.opacity = '0';   // кроссфейд к началу ролика
+      setTimeout(() => { v.pause(); lpCur = nx; lpFading = false; }, LP_FADE * 1000);
+    }
+    lpRAF = requestAnimationFrame(lpLoop);
+  }
+  function lpStart() { lpVideos.forEach(v => v.muted = true); lpVideos[0].play().catch(() => {}); lpLoop(); }
+  function lpStop() { if (lpRAF) cancelAnimationFrame(lpRAF); lpVideos.forEach(v => { try { v.pause(); } catch (e) {} }); }
+  lpStart();
+
   function enterApp() {
     landing.classList.add('hidden');
-    setTimeout(() => { landing.style.display = 'none'; }, 500);
+    setTimeout(() => { landing.style.display = 'none'; lpStop(); }, 600);
     startGeolocation();                 // спрашиваем доступ к GPS именно сейчас
     setTimeout(() => map.resize(), 60);
     setTimeout(hideTip, 7000);          // подсказку про наклон показываем уже в приложении
@@ -748,7 +803,7 @@
     authError.textContent = '';
   }
   authTabs.forEach(t => t.onclick = () => setAuthMode(t.dataset.tab));
-  document.getElementById('btn-auth-open').onclick = () => { setAuthMode('register'); authModal.classList.add('open'); };
+  document.getElementById('btn-auth-open2').onclick = () => { setAuthMode('register'); authModal.classList.add('open'); };
   document.getElementById('auth-close').onclick = () => authModal.classList.remove('open');
   authModal.onclick = (e) => { if (e.target === authModal) authModal.classList.remove('open'); };
   authPass.addEventListener('keydown', e => { if (e.key === 'Enter') authSubmit.click(); });
