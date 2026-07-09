@@ -350,8 +350,11 @@
         if (hd != null) lastHeading = hd;
         lastNavPos = [lat, lng];
 
-        if (!meMarker) meMarker = makeMeMarker();
-        if (!meAdded) { meMarker.addTo(map); meAdded = true; }
+        if (!meMarker) {
+          meMarker = makeMeMarker();
+          meMarker.setLngLat([lng, lat]);   // ВАЖНО: координаты ДО addTo, иначе MapLibre падает (reading 'lng')
+          meMarker.addTo(map); meAdded = true;
+        }
 
         if (navActive) {
           // В навигации задаём только «цель» — к ней плавно едет navLoop()
