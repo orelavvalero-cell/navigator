@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Мой Навигатор 3D</title>
+  <title>Geo Point — 3D-навигатор</title>
 
   <!-- MapLibre GL: векторная карта с поворотом и 3D-наклоном (бесплатно) -->
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
@@ -118,9 +118,79 @@
       background: rgba(17,24,39,.9); color: #fff; padding: 12px 16px; border-radius: 12px; font-size: 14px;
       text-align: center; transition: opacity .5s; box-shadow: 0 4px 20px rgba(0,0,0,.3);
     }
+
+    /* ===== Заставка входа ===== */
+    #landing {
+      position: absolute; inset: 0; z-index: 3000; color: #fff; text-align: center;
+      background: linear-gradient(180deg, rgba(8,13,30,.5), rgba(8,13,30,.82)), url('bg.jpg') center/cover no-repeat;
+      display: flex; align-items: center; justify-content: center; padding: 24px; transition: opacity .5s;
+    }
+    #landing.hidden { opacity: 0; pointer-events: none; }
+    .landing-inner { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 30px; }
+    .brand .logo { font-size: 60px; }
+    .brand h1 { font-size: 46px; font-weight: 800; letter-spacing: .5px; margin-top: 4px; text-shadow: 0 2px 24px rgba(0,0,0,.55); }
+    .brand .tagline { color: #cbd5e1; font-size: 17px; margin-top: 6px; }
+    .landing-actions { display: flex; flex-direction: column; gap: 12px; }
+    .btn-primary {
+      padding: 16px; border: none; border-radius: 14px; background: #2563eb; color: #fff;
+      font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 8px 24px rgba(37,99,235,.45);
+    }
+    .btn-primary:active { background: #1d4ed8; }
+    .btn-secondary {
+      padding: 14px; border: 1.5px solid rgba(255,255,255,.5); border-radius: 14px;
+      background: rgba(255,255,255,.1); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
+    }
+    .greet { color: #e2e8f0; font-size: 15px; min-height: 20px; }
+    .greet a { color: #93c5fd; cursor: pointer; text-decoration: underline; }
+
+    /* ===== Окно регистрации / входа ===== */
+    #auth-modal { position: absolute; inset: 0; z-index: 3100; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 20px; }
+    #auth-modal.open { display: flex; }
+    .auth-card {
+      width: 100%; max-width: 380px; background: var(--panel); color: var(--text); border-radius: 18px;
+      padding: 22px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,.45); display: flex; flex-direction: column; gap: 12px;
+    }
+    .auth-close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 20px; color: var(--muted); cursor: pointer; }
+    .auth-tabs { display: flex; gap: 8px; margin-bottom: 4px; }
+    .auth-tab { flex: 1; padding: 10px; border: none; border-radius: 10px; background: var(--panel-2); color: var(--text); font-weight: 600; cursor: pointer; }
+    .auth-tab.active { background: var(--accent); color: #fff; }
+    .auth-card input { padding: 13px 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 16px; background: var(--panel); color: var(--text); outline: none; }
+    .auth-error { color: #ef4444; font-size: 14px; min-height: 18px; }
   </style>
 </head>
 <body>
+  <!-- ===== Заставка входа Geo Point ===== -->
+  <div id="landing">
+    <div class="landing-inner">
+      <div class="brand">
+        <div class="logo">📍</div>
+        <h1>Geo Point</h1>
+        <p class="tagline">Бесплатный 3D-навигатор</p>
+      </div>
+      <div class="landing-actions">
+        <button id="btn-enter" class="btn-primary">🚀 Начнём путешествие!</button>
+        <button id="btn-auth-open" class="btn-secondary">Регистрация / Вход</button>
+      </div>
+      <div id="greet" class="greet"></div>
+    </div>
+  </div>
+
+  <!-- ===== Окно регистрации / входа ===== -->
+  <div id="auth-modal">
+    <div class="auth-card">
+      <button class="auth-close" id="auth-close">✕</button>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="register">Регистрация</button>
+        <button class="auth-tab" data-tab="login">Вход</button>
+      </div>
+      <input id="auth-name" type="text" placeholder="Имя" autocomplete="name" />
+      <input id="auth-email" type="email" placeholder="Почта (email)" autocomplete="email" />
+      <input id="auth-pass" type="password" placeholder="Пароль" autocomplete="current-password" />
+      <div id="auth-error" class="auth-error"></div>
+      <button id="auth-submit" class="btn-primary">Зарегистрироваться</button>
+    </div>
+  </div>
+
   <div id="map"></div>
 
   <div id="top-ui">
@@ -267,9 +337,11 @@
   }
   // (позицию маркера теперь обновляет обработчик GPS и плавный цикл navLoop)
 
-  map.on('load', () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.watchPosition((pos) => {
+  let geoStarted = false;
+  function startGeolocation() {
+    if (geoStarted || !('geolocation' in navigator)) return;
+    geoStarted = true;
+    navigator.geolocation.watchPosition((pos) => {
         const { latitude: lat, longitude: lng, heading, speed } = pos.coords;
         const first = !myPosition;
         myPosition = [lat, lng];
@@ -291,9 +363,8 @@
           if (lastHeading != null) meMarker.setRotation(lastHeading);
           if (first || followMode) map.easeTo({ center: [lng, lat], zoom: first ? 15.5 : map.getZoom(), duration: 700 });
         }
-      }, (err) => console.warn('GPS:', err.message), { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
-    }
-  });
+    }, (err) => console.warn('GPS:', err.message), { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
+  }
 
   document.getElementById('btn-locate').onclick = () => { followMode = true; if (myPosition) map.easeTo({ center: LL(myPosition), zoom: 16 }); };
   map.on('dragstart', () => { if (!navActive) followMode = false; });
@@ -615,8 +686,90 @@
   // Скрыть подсказку про наклон через несколько секунд / по клику
   const tip = document.getElementById('tip');
   const hideTip = () => { tip.style.opacity = '0'; setTimeout(() => tip.remove(), 600); };
-  setTimeout(hideTip, 7000);
   map.on('pitchstart', hideTip);
+
+  // ============================================================
+  //        ЗАСТАВКА GEO POINT + АККАУНТ (локально в браузере)
+  // ============================================================
+  // Пароль храним не в открытом виде, а как SHA-256 хэш
+  async function hashPass(pass) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('geopoint::' + pass));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  const getUsers = () => { try { return JSON.parse(localStorage.getItem('gp_users')) || {}; } catch { return {}; } };
+  const setUsers = (u) => localStorage.setItem('gp_users', JSON.stringify(u));
+  const getSession = () => localStorage.getItem('gp_session');
+  const currentUser = () => { const s = getSession(); if (!s) return null; const u = getUsers()[s]; return u ? { email: s, name: u.name } : null; };
+
+  const landing = document.getElementById('landing');
+  const greet = document.getElementById('greet');
+  const btnEnter = document.getElementById('btn-enter');
+
+  function refreshGreet() {
+    const u = currentUser();
+    if (u) {
+      greet.innerHTML = 'Вы вошли как <b>' + escapeHtml(u.name) + '</b> · <a id="logout-link">выйти</a>';
+      document.getElementById('logout-link').onclick = () => { localStorage.removeItem('gp_session'); refreshGreet(); };
+      btnEnter.textContent = '🚀 Продолжить, ' + escapeHtml(u.name.split(' ')[0]) + '!';
+    } else {
+      greet.textContent = 'Регистрация не обязательна — можно сразу в путь';
+      btnEnter.textContent = '🚀 Начнём путешествие!';
+    }
+  }
+  refreshGreet();
+
+  function enterApp() {
+    landing.classList.add('hidden');
+    setTimeout(() => { landing.style.display = 'none'; }, 500);
+    startGeolocation();                 // спрашиваем доступ к GPS именно сейчас
+    setTimeout(() => map.resize(), 60);
+    setTimeout(hideTip, 7000);          // подсказку про наклон показываем уже в приложении
+  }
+  btnEnter.onclick = enterApp;
+
+  // --- окно регистрации / входа ---
+  const authModal = document.getElementById('auth-modal');
+  const authTabs = document.querySelectorAll('.auth-tab');
+  const authName = document.getElementById('auth-name');
+  const authEmail = document.getElementById('auth-email');
+  const authPass = document.getElementById('auth-pass');
+  const authError = document.getElementById('auth-error');
+  const authSubmit = document.getElementById('auth-submit');
+  let authMode = 'register';
+
+  function setAuthMode(m) {
+    authMode = m;
+    authTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === m));
+    authName.style.display = m === 'register' ? 'block' : 'none';
+    authSubmit.textContent = m === 'register' ? 'Зарегистрироваться' : 'Войти';
+    authError.textContent = '';
+  }
+  authTabs.forEach(t => t.onclick = () => setAuthMode(t.dataset.tab));
+  document.getElementById('btn-auth-open').onclick = () => { setAuthMode('register'); authModal.classList.add('open'); };
+  document.getElementById('auth-close').onclick = () => authModal.classList.remove('open');
+  authModal.onclick = (e) => { if (e.target === authModal) authModal.classList.remove('open'); };
+  authPass.addEventListener('keydown', e => { if (e.key === 'Enter') authSubmit.click(); });
+
+  authSubmit.onclick = async () => {
+    const name = authName.value.trim(), email = authEmail.value.trim().toLowerCase(), pass = authPass.value;
+    authError.textContent = '';
+    if (!email || !pass) { authError.textContent = 'Заполните почту и пароль'; return; }
+    const users = getUsers();
+    if (authMode === 'register') {
+      if (!name) { authError.textContent = 'Введите имя'; return; }
+      if (pass.length < 4) { authError.textContent = 'Пароль минимум 4 символа'; return; }
+      if (users[email]) { authError.textContent = 'Такая почта уже есть — войдите'; return; }
+      users[email] = { name, pass: await hashPass(pass) };
+      setUsers(users); localStorage.setItem('gp_session', email);
+    } else {
+      const u = users[email];
+      if (!u || u.pass !== await hashPass(pass)) { authError.textContent = 'Неверная почта или пароль'; return; }
+      localStorage.setItem('gp_session', email);
+    }
+    authModal.classList.remove('open');
+    authName.value = authEmail.value = authPass.value = '';
+    refreshGreet();
+  };
   </script>
 </body>
 </html>
