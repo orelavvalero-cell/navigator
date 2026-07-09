@@ -265,27 +265,32 @@
       '<path d="M15 1 L21 12 L15 9 L9 12 Z" fill="#2563eb" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>';
     return new maplibregl.Marker({ element: el, rotationAlignment: 'map' });
   }
-  function updateMyMarker(lat, lng, heading) {
-    myPosition = [lat, lng];
-    if (!meMarker) meMarker = makeMeMarker();
-    meMarker.setLngLat([lng, lat]);
-    if (!meAdded) { meMarker.addTo(map); meAdded = true; }
-    if (heading != null && !isNaN(heading)) meMarker.setRotation(heading);
-  }
+  // (позицию маркера теперь обновляет обработчик GPS и плавный цикл navLoop)
 
   map.on('load', () => {
     if ('geolocation' in navigator) {
       navigator.geolocation.watchPosition((pos) => {
         const { latitude: lat, longitude: lng, heading, speed } = pos.coords;
         const first = !myPosition;
+        myPosition = [lat, lng];
         let hd = (heading != null && !isNaN(heading) && (speed == null || speed > 0.5)) ? heading : null;
         if (hd == null && lastNavPos && distM(lastNavPos, [lat, lng]) > 4) hd = bearingDeg(lastNavPos, [lat, lng]);
         if (hd != null) lastHeading = hd;
         lastNavPos = [lat, lng];
-        updateMyMarker(lat, lng, lastHeading);
 
-        if (navActive) updateNav(lat, lng, lastHeading);
-        else if (first || followMode) map.easeTo({ center: [lng, lat], zoom: first ? 15.5 : map.getZoom(), duration: 700 });
+        if (!meMarker) meMarker = makeMeMarker();
+        if (!meAdded) { meMarker.addTo(map); meAdded = true; }
+
+        if (navActive) {
+          // В навигации задаём только «цель» — к ней плавно едет navLoop()
+          targetPos = [lat, lng];
+          if (lastHeading != null) targetBearing = lastHeading;
+          updateNav(lat, lng, lastHeading);   // подсказки / голос / пересчёт (без камеры)
+        } else {
+          meMarker.setLngLat([lng, lat]);
+          if (lastHeading != null) meMarker.setRotation(lastHeading);
+          if (first || followMode) map.easeTo({ center: [lng, lat], zoom: first ? 15.5 : map.getZoom(), duration: 700 });
+        }
       }, (err) => console.warn('GPS:', err.message), { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
     }
   });
@@ -427,6 +432,8 @@
   //             ЖИВАЯ НАВИГАЦИЯ (3D, курс вверх)
   // ============================================================
   let navActive = false, navSpoken = {}, offRouteCount = 0;
+  // Состояние плавной анимации в навигации:
+  let animPos = null, targetPos = null, animBearing = 0, targetBearing = 0, navRAF = null;
   const navArrow = document.getElementById('nav-arrow'), navInstr = document.getElementById('nav-instr'),
         navDist = document.getElementById('nav-dist'), navEta = document.getElementById('nav-eta'), navRemain = document.getElementById('nav-remain');
 
@@ -435,14 +442,41 @@
     navActive = true; navSpoken = {}; offRouteCount = 0;
     document.body.classList.remove('route-open'); document.body.classList.add('navigating');
     speak('Начинаем движение');
-    if (myPosition) { map.easeTo({ center: LL(myPosition), zoom: 17, pitch: 55, duration: 800 }); updateNav(myPosition[0], myPosition[1], lastHeading); }
+    if (myPosition) {
+      animPos = myPosition.slice();
+      targetPos = myPosition.slice();
+      animBearing = (lastHeading != null) ? lastHeading : map.getBearing();
+      targetBearing = animBearing;
+      map.easeTo({ center: LL(myPosition), bearing: animBearing, zoom: 17, pitch: 55, duration: 800 });
+      updateNav(myPosition[0], myPosition[1], lastHeading);
+      // плавный цикл запускаем после вступительной анимации
+      setTimeout(() => { if (navActive) { if (navRAF) cancelAnimationFrame(navRAF); navLoop(); } }, 850);
+    }
   };
   document.getElementById('btn-stop').onclick = stopNav;
   function stopNav() {
     navActive = false; document.body.classList.remove('navigating');
+    if (navRAF) { cancelAnimationFrame(navRAF); navRAF = null; }
     speechSynthesis && speechSynthesis.cancel();
     map.easeTo({ pitch: 0, bearing: 0, duration: 700 });
     clearRoute();
+  }
+
+  // Плавный кадровый цикл: точка и поворот мягко «догоняют» данные GPS
+  function navLoop() {
+    if (!navActive) return;
+    if (animPos && targetPos) {
+      // позиция: скользим к последней точке (сглаживание ~12% за кадр)
+      animPos[0] += (targetPos[0] - animPos[0]) * 0.12;
+      animPos[1] += (targetPos[1] - animPos[1]) * 0.12;
+      // поворот: по кратчайшей дуге, с учётом перехода 359°→0°
+      let db = ((targetBearing - animBearing + 540) % 360) - 180;
+      animBearing = (animBearing + db * 0.08 + 360) % 360;
+      const ll = [animPos[1], animPos[0]];
+      if (meMarker) { meMarker.setLngLat(ll); meMarker.setRotation(animBearing); }
+      map.jumpTo({ center: ll, bearing: animBearing });   // наклон и зум не трогаем — остаются как есть
+    }
+    navRAF = requestAnimationFrame(navLoop);
   }
   function updateNav(lat, lng, heading) {
     if (!currentRoute) return;
@@ -468,11 +502,7 @@
     navEta.textContent = fmtTime(remainTime);
     navRemain.textContent = fmtDist(remain);
     handleVoice(nextIdx, next, dTurn);
-
-    // Камера: центр на нас, курс вверх, наклон 55° (3D)
-    const cam = { center: [lng, lat], zoom: Math.max(map.getZoom(), 16.5), pitch: 55, duration: 500 };
-    if (heading != null && !isNaN(heading)) cam.bearing = heading;   // в MapLibre bearing = курс = «верх экрана»
-    map.easeTo(cam);
+    // камеру (центр + плавный поворот) двигает navLoop() — здесь только цели уже заданы
   }
   function handleVoice(idx, man, dTurn) {
     const st = navSpoken[idx] || (navSpoken[idx] = {});
