@@ -60,6 +60,7 @@
       width: 52px; height: 52px; border: none; border-radius: 50%; background: var(--panel); color: var(--text);
       cursor: pointer; box-shadow: 0 2px 12px var(--shadow); font-size: 22px; display: flex; align-items: center; justify-content: center;
     }
+    .fab svg { width: 23px; height: 23px; display: block; }
     #btn-voice.off { opacity: .45; }
     #btn-3d.active, #btn-sat.active { background: var(--accent); color: #fff; }
 
@@ -239,11 +240,11 @@
   <div class="suggestions" id="suggestions"></div>
 
   <div id="fabs">
-    <button class="fab" id="btn-3d" title="3D-наклон">🏙️</button>
-    <button class="fab" id="btn-sat" title="Спутник">🛰️</button>
-    <button class="fab" id="btn-theme" title="День / Ночь">🌙</button>
-    <button class="fab" id="btn-voice" title="Голос">🔊</button>
-    <button class="fab" id="btn-locate" title="Где я">🎯</button>
+    <button class="fab" id="btn-3d" title="3D-наклон"></button>
+    <button class="fab" id="btn-sat" title="Спутник"></button>
+    <button class="fab" id="btn-theme" title="День / Ночь"></button>
+    <button class="fab" id="btn-voice" title="Голос"></button>
+    <button class="fab" id="btn-locate" title="Где я"></button>
   </div>
 
   <div id="nav-banner">
@@ -310,6 +311,18 @@
     } catch (e) { console.warn(e); }
   }
   map.on('style.load', ensureRouteLayer);   // срабатывает и при старте, и после смены темы
+
+  // Минималистичные иконки (стиль Feather/Lucide), одним цветом под тему
+  const _svg = (p) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
+  const ICONS = {
+    cube:   _svg('<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>'),
+    globe:  _svg('<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'),
+    moon:   _svg('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'),
+    sun:    _svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>'),
+    volume: _svg('<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>'),
+    mute:   _svg('<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'),
+    locate: _svg('<circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>')
+  };
 
   // ============================================================
   //                     МАТЕМАТИКА / УТИЛИТЫ
@@ -406,11 +419,13 @@
     }, (err) => console.warn('GPS:', err.message), { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
   }
 
+  document.getElementById('btn-locate').innerHTML = ICONS.locate;
   document.getElementById('btn-locate').onclick = () => { followMode = true; if (myPosition) map.easeTo({ center: LL(myPosition), zoom: 16 }); };
   map.on('dragstart', () => { if (!navActive) followMode = false; });
 
   // Кнопка 3D-наклона
   const btn3d = document.getElementById('btn-3d');
+  btn3d.innerHTML = ICONS.cube;
   btn3d.onclick = () => {
     const on = map.getPitch() < 20;
     map.easeTo({ pitch: on ? 55 : 0, duration: 600 });
@@ -537,7 +552,8 @@
     speechSynthesis.cancel(); speechSynthesis.speak(u);
   }
   const btnVoice = document.getElementById('btn-voice');
-  btnVoice.onclick = () => { voiceOn = !voiceOn; btnVoice.classList.toggle('off', !voiceOn); btnVoice.textContent = voiceOn ? '🔊' : '🔇'; if (!voiceOn) speechSynthesis.cancel(); };
+  btnVoice.innerHTML = ICONS.volume;
+  btnVoice.onclick = () => { voiceOn = !voiceOn; btnVoice.classList.toggle('off', !voiceOn); btnVoice.innerHTML = voiceOn ? ICONS.volume : ICONS.mute; if (!voiceOn) speechSynthesis.cancel(); };
 
   // ============================================================
   //             ЖИВАЯ НАВИГАЦИЯ (3D, курс вверх)
@@ -692,12 +708,13 @@
   const btnTheme = document.getElementById('btn-theme');
   const btnSat = document.getElementById('btn-sat');
   let satOn = false;
+  btnSat.innerHTML = ICONS.globe;
 
-  btnTheme.textContent = night ? '☀️' : '🌙';
+  btnTheme.innerHTML = night ? ICONS.sun : ICONS.moon;
   btnTheme.onclick = () => {
     night = !night; localStorage.setItem('nav_night', night ? '1' : '0');
     document.body.classList.toggle('night', night);
-    btnTheme.textContent = night ? '☀️' : '🌙';
+    btnTheme.innerHTML = night ? ICONS.sun : ICONS.moon;
     satOn = false; btnSat.classList.remove('active');
     map.setStyle(night ? STYLE_NIGHT : STYLE_DAY);   // маршрут вернётся через событие style.load
   };
