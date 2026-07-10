@@ -177,6 +177,40 @@
     .auth-guest { background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer; text-decoration: underline; padding: 6px; align-self: center; }
     .auth-guest:hover { color: var(--text); }
     .lp-avatar { width: 26px; height: 26px; border-radius: 50%; vertical-align: middle; margin-right: 8px; border: 1px solid rgba(255,255,255,.4); }
+
+    /* ===== Карточка места ===== */
+    .pc {
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 15; max-width: 680px; margin: 0 auto;
+      background: var(--panel); color: var(--text); border-radius: 20px 20px 0 0; box-shadow: 0 -6px 30px var(--shadow);
+      transform: translateY(110%); transition: transform .35s ease; max-height: 82vh; overflow-y: auto; overflow-x: hidden;
+    }
+    .pc.open { transform: translateY(0); }
+    .pc-photos { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; background: var(--panel-2); min-height: 4px; }
+    .pc-photos::-webkit-scrollbar { display: none; }
+    .pc-photos img { height: 180px; min-width: 220px; object-fit: cover; flex: 0 0 auto; background: var(--panel-2); }
+    .pc-photos-empty { padding: 26px; color: var(--muted); font-size: 14px; text-align: center; width: 100%; }
+    .pc-close {
+      position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; border: none;
+      background: rgba(0,0,0,.55); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2;
+    }
+    .pc-close svg { width: 18px; height: 18px; }
+    .pc-body { padding: 16px 20px 22px; }
+    .pc-title { font-size: 22px; font-weight: 800; line-height: 1.2; }
+    .pc-type { color: var(--muted); font-size: 14px; margin-top: 3px; }
+    .pc-desc { font-size: 14px; line-height: 1.55; margin-top: 12px; }
+    .pc-desc a { color: var(--accent); white-space: nowrap; }
+    .pc-info { margin-top: 12px; display: flex; flex-direction: column; gap: 9px; }
+    .pc-row { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; }
+    .pc-row svg { width: 18px; height: 18px; color: var(--muted); flex: 0 0 auto; margin-top: 1px; }
+    .pc-row a { color: var(--accent); word-break: break-word; }
+    .pc-actions { display: flex; gap: 10px; margin-top: 18px; }
+    .pc-btn-primary, .pc-btn-ghost {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; border: none;
+    }
+    .pc-btn-primary { background: var(--accent); color: #fff; }
+    .pc-btn-ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+    .pc-btn-primary svg, .pc-btn-ghost svg { width: 18px; height: 18px; }
   </style>
 </head>
 <body>
@@ -269,6 +303,22 @@
     <button id="btn-stop">Стоп</button>
   </div>
 
+  <!-- Карточка места (фото + инфо, как в Google Maps) -->
+  <div id="place-card" class="pc">
+    <div class="pc-photos" id="pc-photos"></div>
+    <button class="pc-close" id="pc-close"></button>
+    <div class="pc-body">
+      <div class="pc-title" id="pc-title">…</div>
+      <div class="pc-type" id="pc-type"></div>
+      <div class="pc-desc" id="pc-desc"></div>
+      <div class="pc-info" id="pc-info"></div>
+      <div class="pc-actions">
+        <button class="pc-btn-primary" id="pc-route"></button>
+        <button class="pc-btn-ghost" id="pc-fav"></button>
+      </div>
+    </div>
+  </div>
+
   <div id="tip">👉 Наклоните карту для 3D: <b>правой кнопкой мыши</b> (или двумя пальцами на телефоне)</div>
 
   <script src="https://accounts.google.com/gsi/client" async></script>
@@ -321,7 +371,13 @@
     sun:    _svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>'),
     volume: _svg('<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>'),
     mute:   _svg('<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'),
-    locate: _svg('<circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>')
+    locate: _svg('<circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>'),
+    route:  _svg('<polygon points="3 11 22 2 13 21 11 13 3 11"/>'),
+    star:   _svg('<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>'),
+    x:      _svg('<path d="M18 6 6 18M6 6l12 12"/>'),
+    pin:    _svg('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'),
+    clock:  _svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+    phone:  _svg('<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>')
   };
 
   // ============================================================
@@ -646,34 +702,109 @@
   // ============================================================
   //          КЛИК ПО КАРТЕ → ИНФО О МЕСТЕ
   // ============================================================
-  let openPopup = null;
-  window.routeToPoint = (lat, lng) => { if (openPopup) openPopup.remove(); buildRoute(lat, lng); };
-  window.saveFavPoint = (lat, lng) => { if (openPopup) openPopup.remove(); askSaveFav(lat, lng); };
   function formatAddress(a) {
     if (!a) return '';
     return [[a.road, a.house_number].filter(Boolean).join(', '), a.suburb || a.city_district, a.city || a.town || a.village].filter(Boolean).join(', ');
   }
-  function placePopupHtml(title, addr, lat, lng) {
-    return `<div class="poi-popup"><div class="title">${escapeHtml(title)}</div>${addr ? `<div class="addr">${escapeHtml(addr)}</div>` : ''}
-      <button onclick="routeToPoint(${lat}, ${lng})">🚗 Проложить маршрут</button>
-      <button class="ghost" onclick="saveFavPoint(${lat}, ${lng})">⭐ В избранное</button></div>`;
+  function ruType(t) {
+    const m = { restaurant:'Ресторан', cafe:'Кафе', fast_food:'Фастфуд', bar:'Бар', pub:'Паб', pharmacy:'Аптека',
+      hospital:'Больница', clinic:'Клиника', school:'Школа', university:'Университет', museum:'Музей', park:'Парк',
+      hotel:'Отель', supermarket:'Супермаркет', bank:'Банк', fuel:'Заправка', cinema:'Кинотеатр', theatre:'Театр',
+      church:'Церковь', place_of_worship:'Храм', attraction:'Достопримечательность', monument:'Памятник',
+      artwork:'Арт-объект', square:'Площадь', viewpoint:'Смотровая площадка', zoo:'Зоопарк', stadium:'Стадион' };
+    return m[t] || '';
   }
-  map.on('click', async (e) => {
-    if (navActive) return;
-    const lat = e.lngLat.lat, lng = e.lngLat.lng;
-    // Если кликнули по подписанному объекту векторной карты — берём его имя
-    let title = null;
-    const feats = map.queryRenderedFeatures(e.point);
-    const named = feats.find(f => f.properties && f.properties.name);
-    if (named) title = named.properties.name;
+  const bigThumb = (u) => u ? u.replace(/\/\d+px-/, '/640px-') : u;
+  const iconRow = (icon, html) => '<div class="pc-row">' + icon + '<span>' + html + '</span></div>';
 
-    openPopup = new maplibregl.Popup({ offset: 14 }).setLngLat([lng, lat]).setHTML('<div class="poi-popup">Загружаю…</div>').addTo(map);
-    try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru&zoom=18`;
-      const d = await (await fetch(url)).json();
-      openPopup.setHTML(placePopupHtml(title || d.name || d.address?.road || 'Точка на карте', formatAddress(d.address) || '', lat, lng));
-    } catch { openPopup.setHTML(placePopupHtml(title || 'Точка на карте', '', lat, lng)); }
+  const placeCard = document.getElementById('place-card');
+  let pcLat = null, pcLng = null;
+  document.getElementById('pc-route').innerHTML = ICONS.route + '<span>Маршрут</span>';
+  document.getElementById('pc-fav').innerHTML = ICONS.star + '<span>В избранное</span>';
+  document.getElementById('pc-close').innerHTML = ICONS.x;
+  document.getElementById('pc-close').onclick = () => { placeCard.classList.remove('open'); pcLat = pcLng = null; };
+
+  // Клик по карте → карточка места (фото + описание из Wikipedia/Викисклада + данные OSM)
+  map.on('click', (e) => {
+    if (navActive) return;
+    const named = map.queryRenderedFeatures(e.point).find(f => f.properties && f.properties.name);
+    openPlaceCard(e.lngLat.lat, e.lngLat.lng, named ? named.properties.name : null);
   });
+
+  function openPlaceCard(lat, lng, titleHint) {
+    pcLat = lat; pcLng = lng;
+    placeCard.classList.add('open'); placeCard.scrollTop = 0;
+    document.getElementById('pc-title').textContent = titleHint || 'Загрузка…';
+    document.getElementById('pc-type').textContent = '';
+    document.getElementById('pc-desc').style.display = 'none';
+    document.getElementById('pc-info').innerHTML = '';
+    const ph = document.getElementById('pc-photos');
+    ph.style.display = ''; ph.innerHTML = '<div class="pc-photos-empty">Ищу фото и информацию…</div>';
+    document.getElementById('pc-route').onclick = () => { placeCard.classList.remove('open'); buildRoute(lat, lng); };
+    document.getElementById('pc-fav').onclick = () => askSaveFav(lat, lng);
+    loadPlaceData(lat, lng, titleHint);
+  }
+
+  async function loadPlaceData(lat, lng, titleHint) {
+    let title = titleHint || '', typeName = '', addr = '', extra = {};
+    try {
+      const d = await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ru&zoom=18&extratags=1`)).json();
+      extra = d.extratags || {};
+      addr = formatAddress(d.address);
+      if (!title) title = d.name || (d.address && d.address.road) || 'Место';
+      typeName = ruType(d.type) || ruType(extra.tourism) || ruType(extra.amenity) || '';
+    } catch (e) {}
+
+    let wiki = null;
+    try {
+      let wlang = 'ru', wtitle = null;
+      if (extra.wikipedia && extra.wikipedia.includes(':')) { const parts = extra.wikipedia.split(':'); wlang = parts.shift(); wtitle = parts.join(':'); }
+      if (!wtitle) {
+        const gs = await (await fetch(`https://ru.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}%7C${lng}&gsradius=250&gslimit=1&format=json&origin=*`)).json();
+        const g = gs.query && gs.query.geosearch && gs.query.geosearch[0];
+        if (g) wtitle = g.title;
+      }
+      if (wtitle) {
+        const s = await (await fetch(`https://${wlang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wtitle)}`)).json();
+        if (s && s.extract) wiki = { extract: s.extract, thumb: s.thumbnail && s.thumbnail.source, url: s.content_urls && s.content_urls.desktop && s.content_urls.desktop.page, title: s.title };
+      }
+    } catch (e) {}
+
+    let photos = [];
+    if (wiki && wiki.thumb) photos.push(bigThumb(wiki.thumb));
+    try {
+      const c = await (await fetch(`https://commons.wikimedia.org/w/api.php?action=query&generator=geosearch&ggsnamespace=6&ggscoord=${lat}%7C${lng}&ggsradius=300&ggslimit=6&prop=imageinfo&iiprop=url&iiurlwidth=500&format=json&origin=*`)).json();
+      const pages = c.query && c.query.pages ? Object.values(c.query.pages) : [];
+      pages.forEach(p => { const ii = p.imageinfo && p.imageinfo[0]; if (ii && ii.thumburl) photos.push(ii.thumburl); });
+    } catch (e) {}
+    photos = [...new Set(photos)].slice(0, 8);
+
+    if (pcLat !== lat || pcLng !== lng) return;   // кликнули на другую точку — не перерисовываем
+    renderPlaceCard({ title: (wiki && wiki.title) || title, typeName, addr, extra, wiki, photos });
+  }
+
+  function renderPlaceCard(p) {
+    document.getElementById('pc-title').textContent = p.title || 'Место';
+    document.getElementById('pc-type').textContent = p.typeName || '';
+    const desc = document.getElementById('pc-desc');
+    if (p.wiki && p.wiki.extract) {
+      desc.innerHTML = escapeHtml(p.wiki.extract) + (p.wiki.url ? ' <a href="' + p.wiki.url + '" target="_blank" rel="noopener">Википедия →</a>' : '');
+      desc.style.display = '';
+    } else desc.style.display = 'none';
+
+    const rows = [];
+    if (p.addr) rows.push(iconRow(ICONS.pin, escapeHtml(p.addr)));
+    if (p.extra.opening_hours) rows.push(iconRow(ICONS.clock, escapeHtml(p.extra.opening_hours)));
+    const phone = p.extra.phone || p.extra['contact:phone'];
+    if (phone) rows.push(iconRow(ICONS.phone, '<a href="tel:' + phone.replace(/\s/g, '') + '">' + escapeHtml(phone) + '</a>'));
+    const site = p.extra.website || p.extra['contact:website'] || p.extra.url;
+    if (site) rows.push(iconRow(ICONS.globe, '<a href="' + site + '" target="_blank" rel="noopener">' + escapeHtml(site.replace(/^https?:\/\//, '').replace(/\/$/, '').slice(0, 42)) + '</a>'));
+    document.getElementById('pc-info').innerHTML = rows.join('');
+
+    const ph = document.getElementById('pc-photos');
+    if (p.photos.length) { ph.style.display = ''; ph.innerHTML = p.photos.map(u => '<img src="' + u + '" loading="lazy" alt="" referrerpolicy="no-referrer">').join(''); }
+    else { ph.style.display = 'none'; }
+  }
 
   // ============================================================
   //                ИЗБРАННОЕ (localStorage)
