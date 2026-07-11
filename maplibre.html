@@ -197,6 +197,11 @@
     .pc-body { padding: 16px 20px 22px; }
     .pc-title { font-size: 22px; font-weight: 800; line-height: 1.2; }
     .pc-type { color: var(--muted); font-size: 14px; margin-top: 3px; }
+    .pc-status { font-size: 15px; font-weight: 700; margin-top: 7px; }
+    .pc-status.open { color: #16a34a; }
+    .pc-status.closed { color: #ef4444; }
+    .pc-status.soon { color: #f59e0b; }
+    .pc-status.perm { color: var(--muted); }
     .pc-desc { font-size: 14px; line-height: 1.55; margin-top: 12px; }
     .pc-desc a { color: var(--accent); white-space: nowrap; }
     .pc-info { margin-top: 12px; display: flex; flex-direction: column; gap: 9px; }
@@ -310,6 +315,7 @@
     <div class="pc-body">
       <div class="pc-title" id="pc-title">…</div>
       <div class="pc-type" id="pc-type"></div>
+      <div class="pc-status" id="pc-status"></div>
       <div class="pc-desc" id="pc-desc"></div>
       <div class="pc-info" id="pc-info"></div>
       <div class="pc-actions">
@@ -736,6 +742,7 @@
     placeCard.classList.add('open'); placeCard.scrollTop = 0;
     document.getElementById('pc-title').textContent = titleHint || 'Загрузка…';
     document.getElementById('pc-type').textContent = '';
+    document.getElementById('pc-status').style.display = 'none';
     document.getElementById('pc-desc').style.display = 'none';
     document.getElementById('pc-info').innerHTML = '';
     const ph = document.getElementById('pc-photos');
@@ -783,9 +790,83 @@
     renderPlaceCard({ title: (wiki && wiki.title) || title, typeName, addr, extra, wiki, photos });
   }
 
+  // --- Разбор часов работы OSM (opening_hours) и вычисление статуса ---
+  const OH_DAY = { Mo: 1, Tu: 2, We: 3, Th: 4, Fr: 5, Sa: 6, Su: 0 };
+  const OH_ORDER = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+  const OH_NAMES = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+  function parseOH(value) {
+    if (/^24\s*\/\s*7$/.test(value.trim())) return { always: true };
+    const week = [[], [], [], [], [], [], []];
+    let ok = false;
+    value.split(';').forEach(raw => {
+      let rule = raw.replace(/"[^"]*"/g, '').trim();
+      if (!rule) return;
+      if (/^24\/7/.test(rule)) { for (let d = 0; d < 7; d++) week[d] = [[0, 1440]]; ok = true; return; }
+      const m = rule.match(/^((?:Mo|Tu|We|Th|Fr|Sa|Su|PH|SH|[-,\s])+?)\s+(\S.*)$/);
+      let daysPart = '', timesPart = rule;
+      if (m && /Mo|Tu|We|Th|Fr|Sa|Su/.test(m[1])) { daysPart = m[1]; timesPart = m[2]; }
+      let days = [];
+      if (!daysPart) days = [0, 1, 2, 3, 4, 5, 6];
+      else daysPart.split(',').forEach(tok => {
+        tok = tok.trim();
+        const rng = tok.match(/^(Mo|Tu|We|Th|Fr|Sa|Su)-(Mo|Tu|We|Th|Fr|Sa|Su)$/);
+        if (rng) { const i = OH_ORDER.indexOf(rng[1]), j = OH_ORDER.indexOf(rng[2]); for (let k = i; ; k = (k + 1) % 7) { days.push(OH_DAY[OH_ORDER[k]]); if (k === j) break; } }
+        else if (OH_DAY[tok] !== undefined) days.push(OH_DAY[tok]);
+      });
+      if (!days.length) return;
+      if (/^(off|closed)$/i.test(timesPart.trim())) { days.forEach(d => week[d] = []); ok = true; return; }
+      const times = [...timesPart.matchAll(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/g)];
+      if (!times.length) return;
+      days.forEach(d => times.forEach(t => {
+        let s = (+t[1]) * 60 + (+t[2]), e = (+t[3]) * 60 + (+t[4]);
+        if (e === 0) e = 1440;
+        if (e <= s) { week[d].push([s, 1440]); week[(d + 1) % 7].push([0, e]); }
+        else week[d].push([s, e]);
+        ok = true;
+      }));
+    });
+    return ok ? { week } : null;
+  }
+  function ohStatus(value, now) {
+    if (!value) return null;
+    now = now || new Date();
+    if (/^(closed|off)$/i.test(value.trim())) return { state: 'perm' };
+    let p; try { p = parseOH(value); } catch (e) { return null; }
+    if (!p) return null;
+    if (p.always) return { state: 'open', always: true };
+    const dow = now.getDay(), mins = now.getHours() * 60 + now.getMinutes();
+    for (const iv of (p.week[dow] || [])) if (mins >= iv[0] && mins < iv[1]) return { state: 'open', until: ohDate(now, 0, iv[1]) };
+    for (let add = 0; add < 8; add++) {
+      const list = (p.week[(dow + add) % 7] || []).slice().sort((a, b) => a[0] - b[0]);
+      for (const iv of list) { if (add === 0 && iv[0] <= mins) continue; return { state: 'closed', next: ohDate(now, add, iv[0]) }; }
+    }
+    return { state: 'closed' };
+  }
+  function ohDate(base, addDays, mins) { const d = new Date(base); d.setDate(d.getDate() + addDays); d.setHours(Math.floor(mins / 60), mins % 60, 0, 0); return d; }
+  const ohHM = (d) => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  function statusLabel(st, now) {
+    if (!st) return null;
+    now = now || new Date();
+    if (st.state === 'perm') return { text: 'Закрыто навсегда', cls: 'perm' };
+    if (st.state === 'open') {
+      if (st.always) return { text: 'Открыто круглосуточно', cls: 'open' };
+      const soon = st.until && (st.until - now) <= 3600000;
+      return { text: (soon ? 'Скоро закроется' : 'Открыто') + ' · до ' + ohHM(st.until), cls: soon ? 'soon' : 'open' };
+    }
+    if (st.next) {
+      const sameDay = st.next.getDate() === now.getDate() && (st.next - now) < 86400000;
+      return { text: 'Закрыто · откроется ' + (sameDay ? 'в ' : OH_NAMES[st.next.getDay()] + ' ') + ohHM(st.next), cls: 'closed' };
+    }
+    return { text: 'Закрыто', cls: 'closed' };
+  }
+
   function renderPlaceCard(p) {
     document.getElementById('pc-title').textContent = p.title || 'Место';
     document.getElementById('pc-type').textContent = p.typeName || '';
+    const lbl = statusLabel(ohStatus(p.extra.opening_hours));
+    const statusEl = document.getElementById('pc-status');
+    if (lbl) { statusEl.textContent = lbl.text; statusEl.className = 'pc-status ' + lbl.cls; statusEl.style.display = ''; }
+    else statusEl.style.display = 'none';
     const desc = document.getElementById('pc-desc');
     if (p.wiki && p.wiki.extract) {
       desc.innerHTML = escapeHtml(p.wiki.extract) + (p.wiki.url ? ' <a href="' + p.wiki.url + '" target="_blank" rel="noopener">Википедия →</a>' : '');
