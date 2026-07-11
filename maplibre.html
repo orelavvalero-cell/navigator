@@ -471,8 +471,8 @@
         const first = !myPosition;
         myPosition = [lat, lng];
         startWeather();
-        let hd = (heading != null && !isNaN(heading) && (speed == null || speed > 0.5)) ? heading : null;
-        if (hd == null && lastNavPos && distM(lastNavPos, [lat, lng]) > 4) hd = bearingDeg(lastNavPos, [lat, lng]);
+        let hd = (heading != null && !isNaN(heading) && (speed == null || speed > 1)) ? heading : null;
+        if (hd == null && lastNavPos && distM(lastNavPos, [lat, lng]) > 8) hd = bearingDeg(lastNavPos, [lat, lng]);
         if (hd != null) lastHeading = hd;
         lastNavPos = [lat, lng];
 
@@ -496,8 +496,8 @@
   }
 
   document.getElementById('btn-locate').innerHTML = ICONS.locate;
-  document.getElementById('btn-locate').onclick = () => { followMode = true; if (myPosition) map.easeTo({ center: LL(myPosition), zoom: 16 }); };
-  map.on('dragstart', () => { if (!navActive) followMode = false; });
+  document.getElementById('btn-locate').onclick = () => { followMode = true; if (myPosition && !navActive) map.easeTo({ center: LL(myPosition), zoom: 16 }); };
+  map.on('dragstart', () => { followMode = false; });   // тронул карту — перестаём «прилипать» (и в навигации тоже)
 
   // ===== Погода в текущем месте (Open-Meteo, бесплатно без ключа) =====
   const weatherEl = document.getElementById('weather');
@@ -680,7 +680,7 @@
 
   document.getElementById('btn-start').onclick = () => {
     if (!currentRoute) return;
-    navActive = true; navSpoken = {}; offRouteCount = 0;
+    navActive = true; followMode = true; navSpoken = {}; offRouteCount = 0;
     document.body.classList.remove('route-open'); document.body.classList.add('navigating');
     speak('Starting navigation');
     if (myPosition) {
@@ -707,15 +707,17 @@
   function navLoop() {
     if (!navActive) return;
     if (animPos && targetPos) {
-      // позиция: скользим к последней точке (сглаживание ~12% за кадр)
-      animPos[0] += (targetPos[0] - animPos[0]) * 0.12;
-      animPos[1] += (targetPos[1] - animPos[1]) * 0.12;
-      // поворот: по кратчайшей дуге, с учётом перехода 359°→0°
+      // позиция: «мёртвая зона» — почти не дёргаемся, когда стоим на месте (гасит шум GPS)
+      const dp = distM(animPos, targetPos);
+      const k = dp < 3 ? 0.03 : 0.12;
+      animPos[0] += (targetPos[0] - animPos[0]) * k;
+      animPos[1] += (targetPos[1] - animPos[1]) * k;
+      // поворот: по кратчайшей дуге, мягко (с учётом перехода 359°→0°)
       let db = ((targetBearing - animBearing + 540) % 360) - 180;
-      animBearing = (animBearing + db * 0.08 + 360) % 360;
+      animBearing = (animBearing + db * 0.06 + 360) % 360;
       const ll = [animPos[1], animPos[0]];
       if (meMarker) { meMarker.setLngLat(ll); meMarker.setRotation(animBearing); }
-      map.jumpTo({ center: ll, bearing: animBearing });   // наклон и зум не трогаем — остаются как есть
+      if (followMode) map.jumpTo({ center: ll, bearing: animBearing });   // следуем, только пока пользователь сам не двигал карту
     }
     navRAF = requestAnimationFrame(navLoop);
   }
