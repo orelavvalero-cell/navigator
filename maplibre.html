@@ -44,19 +44,11 @@
       background: var(--panel); color: var(--text); box-shadow: 0 2px 12px var(--shadow); outline: none;
     }
     .search-bar input::placeholder { color: var(--muted); }
-    .search-bar button {
-      padding: 0 18px; border: none; border-radius: var(--radius); background: var(--accent);
-      color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 12px var(--shadow);
-    }
+    .search-bar button { /* стандартная кнопка HTML — оформи по вкусу */ }
     .chip-row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
     .chip-row::-webkit-scrollbar { display: none; }
-    .chip {
-      flex: 0 0 auto; padding: 8px 14px; border: none; border-radius: var(--radius); cursor: pointer;
-      background: var(--panel); color: var(--text); font-size: 14px; font-weight: 500;
-      box-shadow: 0 2px 8px var(--shadow); white-space: nowrap; display: flex; align-items: center; gap: 6px;
-    }
+    .chip { flex: 0 0 auto; }   /* стандартная кнопка (flex — чтобы не сжималась в ряду) */
     .chip .x { opacity: .55; font-size: 12px; }
-    .chip.add { border: 1px dashed var(--border); background: transparent; color: var(--muted); box-shadow: none; }
 
     .suggestions {
       position: absolute; top: 62px; left: 12px; right: 12px; z-index: 11; max-width: 656px; margin: 0 auto;
@@ -68,10 +60,7 @@
     #fabs { position: absolute; right: 16px; bottom: 40px; z-index: 10; display: flex; flex-direction: column; gap: 10px; }
     body.route-open #fabs { bottom: 210px; }
     body.navigating #fabs { bottom: 150px; }
-    .fab {
-      width: 52px; height: 52px; border: none; border-radius: 50%; background: var(--panel); color: var(--text);
-      cursor: pointer; box-shadow: 0 2px 12px var(--shadow); font-size: 22px; display: flex; align-items: center; justify-content: center;
-    }
+    .fab { /* стандартная кнопка HTML */ }
     .fab svg { width: 23px; height: 23px; display: block; }
     /* Погода */
     .weather {
@@ -85,7 +74,6 @@
     .w-temp { font-size: 20px; font-weight: 800; line-height: 1; }
     .w-desc { font-size: 12px; color: var(--muted); margin-top: 3px; max-width: 140px; }
     #btn-voice.off { opacity: .45; }
-    #btn-3d.active, #btn-sat.active { background: var(--accent); color: #fff; }
 
     /* Маркер «я» (стрелка направления) */
     .me-marker svg { display: block; filter: drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
@@ -101,9 +89,8 @@
     .route-info .close, .route-info .fav-save { position: absolute; top: 12px; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); }
     .route-info .close { right: 14px; } .route-info .fav-save { right: 48px; }
     .modes { display: flex; gap: 8px; margin: 12px 0; }
-    .mode { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; background: var(--panel-2); color: var(--text); font-size: 20px; }
-    .mode.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .start-btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius); background: var(--good); color: #fff; font-size: 18px; font-weight: 700; cursor: pointer; }
+    .mode { flex: 1; }   /* стандартная кнопка */
+    .start-btn { /* стандартная кнопка HTML */ }
 
     /* Живая навигация */
     #nav-banner {
@@ -119,7 +106,7 @@
       background: var(--panel); color: var(--text); padding: 14px 20px; border-radius: var(--radius) var(--radius) 0 0;
       box-shadow: 0 -4px 20px var(--shadow); display: none; align-items: center; justify-content: space-between; font-size: 17px; font-weight: 600;
     }
-    #nav-bottom button { padding: 10px 20px; border: none; border-radius: var(--radius); background: #ef4444; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+    #nav-bottom button { /* стандартная кнопка HTML */ }
     body.navigating #top-ui, body.navigating .route-info { display: none !important; }
     body.navigating #nav-banner, body.navigating #nav-bottom { display: flex; }
 
@@ -156,19 +143,15 @@
     .lp-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; }
     .lp-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; letter-spacing: .2px; }
     .lp-brand svg { width: 26px; height: 26px; display: block; }
-    .lp-login { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.28); color: #fff;
-      padding: 9px 20px; border-radius: var(--radius); font-weight: 600; font-size: 15px; cursor: pointer; }
-    .lp-login:hover { background: rgba(255,255,255,.2); }
+    .lp-login { /* стандартная кнопка HTML */ }
     .lp-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 24px; }
     .lp-hero-inner { max-width: 620px; }
     .lp-kicker { text-transform: uppercase; letter-spacing: 2.5px; font-size: 13px; font-weight: 700; color: #7dd3fc; margin-bottom: 16px; }
     .lp-hero h1 { font-size: clamp(32px, 6vw, 58px); line-height: 1.06; font-weight: 800; letter-spacing: -.5px; margin-bottom: 18px; text-shadow: 0 2px 30px rgba(0,0,0,.45); }
     .lp-hero p { font-size: clamp(16px, 2.3vw, 20px); line-height: 1.5; color: #d7e0ee; max-width: 520px; margin-bottom: 28px; }
     .lp-cta { display: flex; gap: 12px; flex-wrap: wrap; }
-    .lp-btn-primary { background: var(--accent); color: #fff; border: none; padding: 15px 30px; border-radius: var(--radius); font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 12px 34px var(--shadow); }
-    .lp-btn-primary:hover { background: #1d4ed8; }
-    .lp-btn-ghost { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.32); padding: 15px 26px; border-radius: var(--radius); font-size: 17px; font-weight: 600; cursor: pointer; }
-    .lp-btn-ghost:hover { background: rgba(255,255,255,.18); }
+    .lp-btn-primary { /* стандартная кнопка HTML */ }
+    .lp-btn-ghost { /* стандартная кнопка HTML */ }
     .lp-greet { margin-top: 18px; color: #cbd5e1; font-size: 15px; min-height: 20px; }
     .lp-greet b { color: #fff; }
     .lp-footer { padding: 16px 24px; color: rgba(255,255,255,.55); font-size: 13px; }
@@ -192,8 +175,7 @@
     .auth-head h3 { font-size: 20px; font-weight: 800; margin: 8px 0 4px; color: var(--text); }
     .auth-head p { font-size: 14px; color: var(--muted); line-height: 1.4; }
     .gbtn { display: flex; justify-content: center; margin: 6px 0; min-height: 44px; }
-    .auth-guest { background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer; text-decoration: underline; padding: 6px; align-self: center; }
-    .auth-guest:hover { color: var(--text); }
+    .auth-guest { align-self: center; }   /* стандартная кнопка HTML */
     .lp-avatar { width: 26px; height: 26px; border-radius: 50%; vertical-align: middle; margin-right: 8px; border: 1px solid rgba(255,255,255,.4); }
 
     /* ===== Карточка места ===== */
@@ -227,12 +209,7 @@
     .pc-row svg { width: 18px; height: 18px; color: var(--muted); flex: 0 0 auto; margin-top: 1px; }
     .pc-row a { color: var(--accent); word-break: break-word; }
     .pc-actions { display: flex; gap: 10px; margin-top: 18px; }
-    .pc-btn-primary, .pc-btn-ghost {
-      flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 13px; border-radius: var(--radius); font-size: 15px; font-weight: 700; cursor: pointer; border: none;
-    }
-    .pc-btn-primary { background: var(--accent); color: #fff; }
-    .pc-btn-ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+    .pc-btn-primary, .pc-btn-ghost { flex: 1; }   /* стандартные кнопки HTML */
     .pc-btn-primary svg, .pc-btn-ghost svg { width: 18px; height: 18px; }
   </style>
 </head>
