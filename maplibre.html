@@ -9,13 +9,25 @@
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
 
   <style>
+    /* ============================================================
+       🎨  НАСТРОЙКА ДИЗАЙНА  — меняй значения тут, под себя
+       Дизайн упрощён (плоский): тени убраны, углы почти прямые.
+         --radius : скругление углов кнопок и панелей (0 = квадрат, 14px = кругло)
+         --shadow : тень. Поставь rgba(0,0,0,.2) чтобы вернуть объём
+         --accent : главный цвет (кнопки/ссылки)
+         --panel / --text / --muted / --border : фон, текст, приглушённый, рамки
+       Круглые кнопки (.fab) сделаны через border-radius: 50% в своих правилах.
+       ============================================================ */
     :root {
       --panel: #ffffff; --panel-2: #f3f4f6; --text: #111827; --muted: #6b7280;
-      --border: #e5e7eb; --accent: #2563eb; --accent-press: #1d4ed8; --shadow: rgba(0,0,0,.2); --good: #16a34a;
+      --border: #e5e7eb; --accent: #2563eb; --accent-press: #1d4ed8; --good: #16a34a;
+      --shadow: transparent;   /* тени выключены */
+      --radius: 6px;           /* скругление углов */
     }
     body.night {
       --panel: #1f2430; --panel-2: #2a3140; --text: #e5e7eb; --muted: #9ca3af;
-      --border: #374151; --accent: #3b82f6; --accent-press: #2563eb; --shadow: rgba(0,0,0,.55); --good: #22c55e;
+      --border: #374151; --accent: #3b82f6; --accent-press: #2563eb; --good: #22c55e;
+      --shadow: transparent;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
@@ -28,18 +40,18 @@
     }
     .search-bar { display: flex; gap: 8px; }
     .search-bar input {
-      flex: 1; padding: 14px 16px; border: none; border-radius: 12px; font-size: 16px;
+      flex: 1; padding: 14px 16px; border: none; border-radius: var(--radius); font-size: 16px;
       background: var(--panel); color: var(--text); box-shadow: 0 2px 12px var(--shadow); outline: none;
     }
     .search-bar input::placeholder { color: var(--muted); }
     .search-bar button {
-      padding: 0 18px; border: none; border-radius: 12px; background: var(--accent);
+      padding: 0 18px; border: none; border-radius: var(--radius); background: var(--accent);
       color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 12px var(--shadow);
     }
     .chip-row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
     .chip-row::-webkit-scrollbar { display: none; }
     .chip {
-      flex: 0 0 auto; padding: 8px 14px; border: none; border-radius: 999px; cursor: pointer;
+      flex: 0 0 auto; padding: 8px 14px; border: none; border-radius: var(--radius); cursor: pointer;
       background: var(--panel); color: var(--text); font-size: 14px; font-weight: 500;
       box-shadow: 0 2px 8px var(--shadow); white-space: nowrap; display: flex; align-items: center; gap: 6px;
     }
@@ -48,7 +60,7 @@
 
     .suggestions {
       position: absolute; top: 62px; left: 12px; right: 12px; z-index: 11; max-width: 656px; margin: 0 auto;
-      background: var(--panel); border-radius: 12px; box-shadow: 0 4px 20px var(--shadow); overflow: hidden; display: none;
+      background: var(--panel); border-radius: var(--radius); box-shadow: 0 4px 20px var(--shadow); overflow: hidden; display: none;
     }
     .suggestions div { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text); }
 
@@ -64,7 +76,7 @@
     /* Погода */
     .weather {
       position: absolute; left: 12px; top: 112px; z-index: 9;
-      background: var(--panel); color: var(--text); border-radius: 14px; padding: 8px 14px 8px 11px;
+      background: var(--panel); color: var(--text); border-radius: var(--radius); padding: 8px 14px 8px 11px;
       box-shadow: 0 2px 12px var(--shadow); display: none; align-items: center; gap: 10px;
     }
     .weather.ready { display: flex; }
@@ -81,7 +93,7 @@
     /* План маршрута */
     .route-info {
       position: absolute; bottom: 0; left: 0; right: 0; z-index: 10; max-width: 680px; margin: 0 auto;
-      background: var(--panel); border-radius: 20px 20px 0 0; padding: 16px 20px 22px; box-shadow: 0 -4px 20px var(--shadow); display: none;
+      background: var(--panel); border-radius: var(--radius) var(--radius) 0 0; padding: 16px 20px 22px; box-shadow: 0 -4px 20px var(--shadow); display: none;
     }
     .route-info .summary { display: flex; align-items: baseline; gap: 14px; }
     .route-info .summary .big { font-size: 26px; font-weight: 700; color: var(--good); }
@@ -89,14 +101,14 @@
     .route-info .close, .route-info .fav-save { position: absolute; top: 12px; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); }
     .route-info .close { right: 14px; } .route-info .fav-save { right: 48px; }
     .modes { display: flex; gap: 8px; margin: 12px 0; }
-    .mode { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; background: var(--panel-2); color: var(--text); font-size: 20px; }
+    .mode { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; background: var(--panel-2); color: var(--text); font-size: 20px; }
     .mode.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .start-btn { width: 100%; padding: 14px; border: none; border-radius: 14px; background: var(--good); color: #fff; font-size: 18px; font-weight: 700; cursor: pointer; }
+    .start-btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius); background: var(--good); color: #fff; font-size: 18px; font-weight: 700; cursor: pointer; }
 
     /* Живая навигация */
     #nav-banner {
       position: absolute; top: 0; left: 0; right: 0; z-index: 10; max-width: 680px; margin: 0 auto;
-      background: var(--accent); color: #fff; padding: 16px 20px; border-radius: 0 0 18px 18px;
+      background: var(--accent); color: #fff; padding: 16px 20px; border-radius: 0 0 var(--radius) var(--radius);
       display: none; align-items: center; gap: 16px; box-shadow: 0 4px 20px var(--shadow);
     }
     #nav-banner .arrow { font-size: 42px; line-height: 1; min-width: 46px; text-align: center; }
@@ -104,15 +116,15 @@
     #nav-banner .instr { font-size: 16px; opacity: .95; margin-top: 2px; }
     #nav-bottom {
       position: absolute; bottom: 0; left: 0; right: 0; z-index: 10; max-width: 680px; margin: 0 auto;
-      background: var(--panel); color: var(--text); padding: 14px 20px; border-radius: 18px 18px 0 0;
+      background: var(--panel); color: var(--text); padding: 14px 20px; border-radius: var(--radius) var(--radius) 0 0;
       box-shadow: 0 -4px 20px var(--shadow); display: none; align-items: center; justify-content: space-between; font-size: 17px; font-weight: 600;
     }
-    #nav-bottom button { padding: 10px 20px; border: none; border-radius: 12px; background: #ef4444; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+    #nav-bottom button { padding: 10px 20px; border: none; border-radius: var(--radius); background: #ef4444; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
     body.navigating #top-ui, body.navigating .route-info { display: none !important; }
     body.navigating #nav-banner, body.navigating #nav-bottom { display: flex; }
 
     /* Всплывающее окно (тёмная тема) */
-    .maplibregl-popup-content { background: var(--panel); color: var(--text); border-radius: 12px; padding: 14px 16px; }
+    .maplibregl-popup-content { background: var(--panel); color: var(--text); border-radius: var(--radius); padding: 14px 16px; }
     .maplibregl-popup-close-button { color: var(--muted); font-size: 18px; }
     .maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--panel); }
     .maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--panel); }
@@ -121,14 +133,14 @@
     .poi-popup { min-width: 190px; }
     .poi-popup .title { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
     .poi-popup .addr { font-size: 13px; color: var(--muted); margin-bottom: 10px; line-height: 1.35; }
-    .poi-popup button { width: 100%; padding: 10px; border: none; border-radius: 10px; margin-top: 6px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .poi-popup button { width: 100%; padding: 10px; border: none; border-radius: var(--radius); margin-top: 6px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
     .poi-popup button.ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
 
     /* Подсказка про наклон */
     #tip {
       position: absolute; left: 12px; right: 12px; bottom: 40px; z-index: 9; max-width: 560px; margin: 0 auto;
-      background: rgba(17,24,39,.9); color: #fff; padding: 12px 16px; border-radius: 12px; font-size: 14px;
-      text-align: center; transition: opacity .5s; box-shadow: 0 4px 20px rgba(0,0,0,.3);
+      background: rgba(17,24,39,.9); color: #fff; padding: 12px 16px; border-radius: var(--radius); font-size: 14px;
+      text-align: center; transition: opacity .5s; box-shadow: 0 4px 20px var(--shadow);
     }
 
     /* ===== Лендинг Geo Point ===== */
@@ -139,18 +151,13 @@
     #landing.hidden { opacity: 0; pointer-events: none; }
     .lp-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .8s ease; }
     #lp-v1 { opacity: 1; }
-    .lp-overlay {
-      position: absolute; inset: 0;
-      background:
-        linear-gradient(90deg, rgba(4,7,16,.9) 0%, rgba(4,7,16,.62) 46%, rgba(4,7,16,.28) 100%),
-        linear-gradient(0deg, rgba(4,7,16,.85) 0%, rgba(4,7,16,.08) 46%);
-    }
+    .lp-overlay { position: absolute; inset: 0; background: rgba(4,7,16,.55); }
     .lp-header, .lp-hero, .lp-footer { position: relative; z-index: 2; }
     .lp-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; }
     .lp-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; letter-spacing: .2px; }
     .lp-brand svg { width: 26px; height: 26px; display: block; }
     .lp-login { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.28); color: #fff;
-      padding: 9px 20px; border-radius: 10px; font-weight: 600; font-size: 15px; cursor: pointer; }
+      padding: 9px 20px; border-radius: var(--radius); font-weight: 600; font-size: 15px; cursor: pointer; }
     .lp-login:hover { background: rgba(255,255,255,.2); }
     .lp-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 24px; }
     .lp-hero-inner { max-width: 620px; }
@@ -158,9 +165,9 @@
     .lp-hero h1 { font-size: clamp(32px, 6vw, 58px); line-height: 1.06; font-weight: 800; letter-spacing: -.5px; margin-bottom: 18px; text-shadow: 0 2px 30px rgba(0,0,0,.45); }
     .lp-hero p { font-size: clamp(16px, 2.3vw, 20px); line-height: 1.5; color: #d7e0ee; max-width: 520px; margin-bottom: 28px; }
     .lp-cta { display: flex; gap: 12px; flex-wrap: wrap; }
-    .lp-btn-primary { background: #2563eb; color: #fff; border: none; padding: 15px 30px; border-radius: 12px; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 12px 34px rgba(37,99,235,.5); }
+    .lp-btn-primary { background: var(--accent); color: #fff; border: none; padding: 15px 30px; border-radius: var(--radius); font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 12px 34px var(--shadow); }
     .lp-btn-primary:hover { background: #1d4ed8; }
-    .lp-btn-ghost { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.32); padding: 15px 26px; border-radius: 12px; font-size: 17px; font-weight: 600; cursor: pointer; }
+    .lp-btn-ghost { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.32); padding: 15px 26px; border-radius: var(--radius); font-size: 17px; font-weight: 600; cursor: pointer; }
     .lp-btn-ghost:hover { background: rgba(255,255,255,.18); }
     .lp-greet { margin-top: 18px; color: #cbd5e1; font-size: 15px; min-height: 20px; }
     .lp-greet b { color: #fff; }
@@ -171,14 +178,14 @@
     #auth-modal { position: absolute; inset: 0; z-index: 3100; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 20px; }
     #auth-modal.open { display: flex; }
     .auth-card {
-      width: 100%; max-width: 380px; background: var(--panel); color: var(--text); border-radius: 18px;
-      padding: 22px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,.45); display: flex; flex-direction: column; gap: 12px;
+      width: 100%; max-width: 380px; background: var(--panel); color: var(--text); border-radius: var(--radius);
+      padding: 22px; position: relative; box-shadow: 0 20px 60px var(--shadow); display: flex; flex-direction: column; gap: 12px;
     }
     .auth-close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 20px; color: var(--muted); cursor: pointer; }
     .auth-tabs { display: flex; gap: 8px; margin-bottom: 4px; }
-    .auth-tab { flex: 1; padding: 10px; border: none; border-radius: 10px; background: var(--panel-2); color: var(--text); font-weight: 600; cursor: pointer; }
+    .auth-tab { flex: 1; padding: 10px; border: none; border-radius: var(--radius); background: var(--panel-2); color: var(--text); font-weight: 600; cursor: pointer; }
     .auth-tab.active { background: var(--accent); color: #fff; }
-    .auth-card input { padding: 13px 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 16px; background: var(--panel); color: var(--text); outline: none; }
+    .auth-card input { padding: 13px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 16px; background: var(--panel); color: var(--text); outline: none; }
     .auth-error { color: #ef4444; font-size: 14px; min-height: 18px; }
     .auth-head { text-align: center; margin-bottom: 8px; }
     .auth-head svg { width: 40px; height: 40px; }
@@ -192,7 +199,7 @@
     /* ===== Карточка места ===== */
     .pc {
       position: absolute; left: 0; right: 0; bottom: 0; z-index: 15; max-width: 680px; margin: 0 auto;
-      background: var(--panel); color: var(--text); border-radius: 20px 20px 0 0; box-shadow: 0 -6px 30px var(--shadow);
+      background: var(--panel); color: var(--text); border-radius: var(--radius) var(--radius) 0 0; box-shadow: 0 -6px 30px var(--shadow);
       transform: translateY(110%); transition: transform .35s ease; max-height: 82vh; overflow-y: auto; overflow-x: hidden;
     }
     .pc.open { transform: translateY(0); }
@@ -222,7 +229,7 @@
     .pc-actions { display: flex; gap: 10px; margin-top: 18px; }
     .pc-btn-primary, .pc-btn-ghost {
       flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 13px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; border: none;
+      padding: 13px; border-radius: var(--radius); font-size: 15px; font-weight: 700; cursor: pointer; border: none;
     }
     .pc-btn-primary { background: var(--accent); color: #fff; }
     .pc-btn-ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
