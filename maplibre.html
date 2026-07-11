@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Geo Point — 3D-навигатор</title>
+  <title>Geo Point — 3D Navigator</title>
 
   <!-- MapLibre GL: векторная карта с поворотом и 3D-наклоном (бесплатно) -->
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
@@ -227,24 +227,24 @@
         <span>Geo Point</span>
       </div>
       <nav class="lp-nav">
-        <button id="btn-auth-open" class="lp-login">Войти</button>
+        <button id="btn-auth-open" class="lp-login">Sign in</button>
       </nav>
     </header>
 
     <main class="lp-hero">
       <div class="lp-hero-inner">
-        <div class="lp-kicker">Бесплатный 3D-навигатор</div>
-        <h1>Прокладывайте маршруты<br>по всему миру</h1>
-        <p>3D-карты, спутник, живая навигация с голосом и поиск мест — прямо в браузере, без установки и без оплаты.</p>
+        <div class="lp-kicker">Free 3D navigator</div>
+        <h1>Plan routes<br>across the world</h1>
+        <p>3D maps, satellite, live voice navigation and place search — right in your browser, no install, no fees.</p>
         <div class="lp-cta">
-          <button id="btn-enter" class="lp-btn-primary">Открыть карту</button>
-          <button id="btn-auth-open2" class="lp-btn-ghost">Создать аккаунт</button>
+          <button id="btn-enter" class="lp-btn-primary">Open map</button>
+          <button id="btn-auth-open2" class="lp-btn-ghost">Create account</button>
         </div>
         <div id="greet" class="lp-greet"></div>
       </div>
     </main>
 
-    <footer class="lp-footer">Карты © OpenStreetMap · Снимки © Esri · Маршруты Valhalla</footer>
+    <footer class="lp-footer">Maps © OpenStreetMap · Imagery © Esri · Routing by Valhalla</footer>
   </div>
 
   <!-- ===== Окно входа через Google ===== -->
@@ -253,12 +253,12 @@
       <button class="auth-close" id="auth-close">✕</button>
       <div class="auth-head">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2C7.6 2 4 5.6 4 10c0 5.7 8 12 8 12s8-6.3 8-12c0-4.4-3.6-8-8-8z" fill="#2563eb" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="10" r="3" fill="#fff"/></svg>
-        <h3>Вход в Geo Point</h3>
-        <p>Войдите через Google — сохраним ваше имя и настройки.</p>
+        <h3>Sign in to Geo Point</h3>
+        <p>Sign in with Google — we'll save your name and settings.</p>
       </div>
       <div id="gbtn" class="gbtn"></div>
       <div id="auth-error" class="auth-error"></div>
-      <button id="btn-guest" class="auth-guest">Продолжить без входа</button>
+      <button id="btn-guest" class="auth-guest">Continue without signing in</button>
     </div>
   </div>
 
@@ -266,15 +266,15 @@
 
   <div id="top-ui">
     <div class="search-bar">
-      <input id="search" type="text" placeholder="Куда едем? Введите адрес…" autocomplete="off" />
-      <button id="btn-go">Поиск</button>
+      <input id="search" type="text" placeholder="Where to? Enter an address…" autocomplete="off" />
+      <button id="btn-go">Search</button>
     </div>
     <div class="chip-row" id="fav-row"></div>
   </div>
   <div class="suggestions" id="suggestions"></div>
 
   <!-- Погода в текущем месте -->
-  <div id="weather" class="weather" title="Погода рядом">
+  <div id="weather" class="weather" title="Weather nearby">
     <div class="w-icon" id="w-icon"></div>
     <div>
       <div class="w-temp" id="w-temp">—</div>
@@ -283,11 +283,11 @@
   </div>
 
   <div id="fabs">
-    <button class="fab" id="btn-3d" title="3D-наклон"></button>
-    <button class="fab" id="btn-sat" title="Спутник"></button>
-    <button class="fab" id="btn-theme" title="День / Ночь"></button>
-    <button class="fab" id="btn-voice" title="Голос"></button>
-    <button class="fab" id="btn-locate" title="Где я"></button>
+    <button class="fab" id="btn-3d" title="3D tilt"></button>
+    <button class="fab" id="btn-sat" title="Satellite"></button>
+    <button class="fab" id="btn-theme" title="Day / Night"></button>
+    <button class="fab" id="btn-voice" title="Voice"></button>
+    <button class="fab" id="btn-locate" title="Where am I"></button>
   </div>
 
   <div id="nav-banner">
@@ -296,7 +296,7 @@
   </div>
 
   <div class="route-info" id="route-info">
-    <button class="fav-save" id="btn-fav" title="В избранное">⭐</button>
+    <button class="fav-save" id="btn-fav" title="Save to favorites">⭐</button>
     <button class="close" id="btn-close">✕</button>
     <div class="summary"><div class="big" id="route-time">—</div><div class="sub" id="route-dist">—</div></div>
     <div class="modes" id="modes">
@@ -304,12 +304,12 @@
       <button class="mode" data-mode="pedestrian">🚶</button>
       <button class="mode" data-mode="bicycle">🚴</button>
     </div>
-    <button class="start-btn" id="btn-start">▶ Поехали</button>
+    <button class="start-btn" id="btn-start">▶ Start</button>
   </div>
 
   <div id="nav-bottom">
     <div><span id="nav-eta">—</span> · <span id="nav-remain">—</span></div>
-    <button id="btn-stop">Стоп</button>
+    <button id="btn-stop">Stop</button>
   </div>
 
   <!-- Карточка места (фото + инфо, как в Google Maps) -->
@@ -329,7 +329,7 @@
     </div>
   </div>
 
-  <div id="tip">👉 Наклоните карту для 3D: <b>правой кнопкой мыши</b> (или двумя пальцами на телефоне)</div>
+  <div id="tip">👉 Tilt the map for 3D: <b>right mouse button</b> (or two fingers on phone)</div>
 
   <script src="https://accounts.google.com/gsi/client" async></script>
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
@@ -423,9 +423,9 @@
     }
     return coords;
   }
-  const fmtDist = m => m < 1000 ? Math.round(m/10)*10 + ' м' : (m/1000).toFixed(1) + ' км';
-  const fmtTime = s => { const m = Math.round(s/60); return m < 60 ? m + ' мин' : Math.floor(m/60) + ' ч ' + (m%60) + ' мин'; };
-  const roundDistWords = m => (m < 150 ? Math.round(m/50)*50 : Math.round(m/100)*100) + ' метров';
+  const fmtDist = m => m < 1000 ? Math.round(m/10)*10 + ' m' : (m/1000).toFixed(1) + ' km';
+  const fmtTime = s => { const m = Math.round(s/60); return m < 60 ? m + ' min' : Math.floor(m/60) + ' h ' + (m%60) + ' min'; };
+  const roundDistWords = m => (m < 150 ? Math.round(m/50)*50 : Math.round(m/100)*100) + ' meters';
   const lower1 = s => s ? s.charAt(0).toLowerCase() + s.slice(1) : s;
   const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   function arrowFor(t) {
@@ -500,15 +500,15 @@
   let weatherFetched = false;
   function wmo(code) {
     const C = { sun: '#f59e0b', cloud: 'var(--muted)', rain: '#3b82f6', snow: '#93c5fd', storm: '#f59e0b' };
-    if (code === 0) return { icon: ICONS.sun, label: 'Ясно', color: C.sun };
-    if (code === 1) return { icon: ICONS.sun, label: 'Малооблачно', color: C.sun };
-    if (code === 2) return { icon: ICONS.cloud, label: 'Переменная облачность', color: C.cloud };
-    if (code === 3) return { icon: ICONS.cloud, label: 'Пасмурно', color: C.cloud };
-    if (code === 45 || code === 48) return { icon: ICONS.cloud, label: 'Туман', color: C.cloud };
-    if (code >= 51 && code <= 57) return { icon: ICONS.drizzle, label: 'Морось', color: C.rain };
-    if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return { icon: ICONS.rain, label: 'Дождь', color: C.rain };
-    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return { icon: ICONS.snow, label: 'Снег', color: C.snow };
-    if (code >= 95) return { icon: ICONS.storm, label: 'Гроза', color: C.storm };
+    if (code === 0) return { icon: ICONS.sun, label: 'Clear', color: C.sun };
+    if (code === 1) return { icon: ICONS.sun, label: 'Mostly clear', color: C.sun };
+    if (code === 2) return { icon: ICONS.cloud, label: 'Partly cloudy', color: C.cloud };
+    if (code === 3) return { icon: ICONS.cloud, label: 'Overcast', color: C.cloud };
+    if (code === 45 || code === 48) return { icon: ICONS.cloud, label: 'Fog', color: C.cloud };
+    if (code >= 51 && code <= 57) return { icon: ICONS.drizzle, label: 'Drizzle', color: C.rain };
+    if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return { icon: ICONS.rain, label: 'Rain', color: C.rain };
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return { icon: ICONS.snow, label: 'Snow', color: C.snow };
+    if (code >= 95) return { icon: ICONS.storm, label: 'Thunderstorm', color: C.storm };
     return { icon: ICONS.cloud, label: '', color: C.cloud };
   }
   async function loadWeather() {
@@ -523,7 +523,7 @@
       iconEl.innerHTML = w.icon; iconEl.style.color = w.color;
       document.getElementById('w-temp').textContent = Math.round(c.temperature_2m) + '°';
       document.getElementById('w-desc').textContent = w.label;
-      weatherEl.title = `${w.label}, ощущается ${Math.round(c.apparent_temperature)}°, ветер ${Math.round(c.wind_speed_10m)} м/с, влажность ${c.relative_humidity_2m}%`;
+      weatherEl.title = `${w.label}, feels like ${Math.round(c.apparent_temperature)}°, wind ${Math.round(c.wind_speed_10m)} m/s, humidity ${c.relative_humidity_2m}%`;
       weatherEl.classList.add('ready');
     } catch (e) {}
   }
@@ -558,7 +558,7 @@
   searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btn-go').click(); });
   async function geocode(query) {
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=ru&q=${encodeURIComponent(query)}`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=en&q=${encodeURIComponent(query)}`;
       showSuggestions(await (await fetch(url)).json());
     } catch (e) { console.error(e); }
   }
@@ -575,7 +575,7 @@
   }
   document.getElementById('btn-go').onclick = async () => {
     const q = searchInput.value.trim(); if (q.length < 3) return;
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=ru&q=${encodeURIComponent(q)}`;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=en&q=${encodeURIComponent(q)}`;
     const data = await (await fetch(url)).json();
     if (data[0]) buildRoute(+data[0].lat, +data[0].lon);
   };
@@ -587,7 +587,7 @@
   const routeInfoBox = document.getElementById('route-info');
 
   async function fetchRoute(from, to, mode) {
-    const body = { locations: [{ lat: from[0], lon: from[1] }, { lat: to[0], lon: to[1] }], costing: mode, directions_options: { language: 'ru-RU', units: 'kilometers' } };
+    const body = { locations: [{ lat: from[0], lon: from[1] }, { lat: to[0], lon: to[1] }], costing: mode, directions_options: { language: 'en-US', units: 'kilometers' } };
     const res = await fetch('https://valhalla1.openstreetmap.de/route?json=' + encodeURIComponent(JSON.stringify(body)));
     if (!res.ok) throw new Error('HTTP ' + res.status);
     return res.json();
@@ -601,11 +601,11 @@
     };
   }
   async function buildRoute(lat, lng, opts = {}) {
-    if (!myPosition) { alert('Сначала определите ваше местоположение (разрешите GPS).'); return false; }
+    if (!myPosition) { alert('First set your location (allow GPS access).'); return false; }
     destLatLng = [lat, lng];
     try {
       const data = await fetchRoute(myPosition, destLatLng, travelMode);
-      if (!data.trip || !data.trip.legs || !data.trip.legs.length) throw new Error('нет маршрута');
+      if (!data.trip || !data.trip.legs || !data.trip.legs.length) throw new Error('no route');
       currentRoute = parseRoute(data);
       routeGeoJSON = { type: 'Feature', geometry: { type: 'LineString', coordinates: currentRoute.coords.map(c => [c[1], c[0]]) } };
       ensureRouteLayer();
@@ -615,7 +615,7 @@
       return true;
     } catch (e) {
       console.error(e);
-      if (!opts.silent) alert('Не удалось построить маршрут. Попробуйте другую точку или режим.');
+      if (!opts.silent) alert('Could not build a route. Try another point or mode.');
       return false;
     }
   }
@@ -658,7 +658,7 @@
   let voiceOn = true;
   function speak(text) {
     if (!voiceOn || !('speechSynthesis' in window)) return;
-    const u = new SpeechSynthesisUtterance(text); u.lang = 'ru-RU';
+    const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US';
     speechSynthesis.cancel(); speechSynthesis.speak(u);
   }
   const btnVoice = document.getElementById('btn-voice');
@@ -678,7 +678,7 @@
     if (!currentRoute) return;
     navActive = true; navSpoken = {}; offRouteCount = 0;
     document.body.classList.remove('route-open'); document.body.classList.add('navigating');
-    speak('Начинаем движение');
+    speak('Starting navigation');
     if (myPosition) {
       animPos = myPosition.slice();
       targetPos = myPosition.slice();
@@ -744,14 +744,14 @@
   function handleVoice(idx, man, dTurn) {
     const st = navSpoken[idx] || (navSpoken[idx] = {});
     if (dTurn <= 60 && !st.near) { st.near = true; speak(man.text); return; }
-    if (dTurn <= 350 && dTurn > 90 && !st.far) { st.far = true; speak('Через ' + roundDistWords(dTurn) + ', ' + lower1(man.text)); }
+    if (dTurn <= 350 && dTurn > 90 && !st.far) { st.far = true; speak('In ' + roundDistWords(dTurn) + ', ' + lower1(man.text)); }
   }
   function arrive() {
-    speak('Вы прибыли на место');
-    navInstr.textContent = 'Вы на месте'; navArrow.textContent = '⚑'; navDist.textContent = '';
+    speak('You have arrived');
+    navInstr.textContent = 'You have arrived'; navArrow.textContent = '⚑'; navDist.textContent = '';
     setTimeout(stopNav, 2500);
   }
-  async function recalc() { speak('Перестраиваю маршрут'); await buildRoute(destLatLng[0], destLatLng[1], { silent: true }); navSpoken = {}; }
+  async function recalc() { speak('Recalculating route'); await buildRoute(destLatLng[0], destLatLng[1], { silent: true }); navSpoken = {}; }
 
   // ============================================================
   //          КЛИК ПО КАРТЕ → ИНФО О МЕСТЕ
@@ -761,11 +761,11 @@
     return [[a.road, a.house_number].filter(Boolean).join(', '), a.suburb || a.city_district, a.city || a.town || a.village].filter(Boolean).join(', ');
   }
   function ruType(t) {
-    const m = { restaurant:'Ресторан', cafe:'Кафе', fast_food:'Фастфуд', bar:'Бар', pub:'Паб', pharmacy:'Аптека',
-      hospital:'Больница', clinic:'Клиника', school:'Школа', university:'Университет', museum:'Музей', park:'Парк',
-      hotel:'Отель', supermarket:'Супермаркет', bank:'Банк', fuel:'Заправка', cinema:'Кинотеатр', theatre:'Театр',
-      church:'Церковь', place_of_worship:'Храм', attraction:'Достопримечательность', monument:'Памятник',
-      artwork:'Арт-объект', square:'Площадь', viewpoint:'Смотровая площадка', zoo:'Зоопарк', stadium:'Стадион' };
+    const m = { restaurant:'Restaurant', cafe:'Cafe', fast_food:'Fast food', bar:'Bar', pub:'Pub', pharmacy:'Pharmacy',
+      hospital:'Hospital', clinic:'Clinic', school:'School', university:'University', museum:'Museum', park:'Park',
+      hotel:'Hotel', supermarket:'Supermarket', bank:'Bank', fuel:'Gas station', cinema:'Cinema', theatre:'Theatre',
+      church:'Church', place_of_worship:'Place of worship', attraction:'Attraction', monument:'Monument',
+      artwork:'Artwork', square:'Square', viewpoint:'Viewpoint', zoo:'Zoo', stadium:'Stadium' };
     return m[t] || '';
   }
   const bigThumb = (u) => u ? u.replace(/\/\d+px-/, '/640px-') : u;
@@ -773,8 +773,8 @@
 
   const placeCard = document.getElementById('place-card');
   let pcLat = null, pcLng = null;
-  document.getElementById('pc-route').innerHTML = ICONS.route + '<span>Маршрут</span>';
-  document.getElementById('pc-fav').innerHTML = ICONS.star + '<span>В избранное</span>';
+  document.getElementById('pc-route').innerHTML = ICONS.route + '<span>Directions</span>';
+  document.getElementById('pc-fav').innerHTML = ICONS.star + '<span>Save</span>';
   document.getElementById('pc-close').innerHTML = ICONS.x;
   document.getElementById('pc-close').onclick = () => { placeCard.classList.remove('open'); pcLat = pcLng = null; };
 
@@ -788,13 +788,13 @@
   function openPlaceCard(lat, lng, titleHint) {
     pcLat = lat; pcLng = lng;
     placeCard.classList.add('open'); placeCard.scrollTop = 0;
-    document.getElementById('pc-title').textContent = titleHint || 'Загрузка…';
+    document.getElementById('pc-title').textContent = titleHint || 'Loading…';
     document.getElementById('pc-type').textContent = '';
     document.getElementById('pc-status').style.display = 'none';
     document.getElementById('pc-desc').style.display = 'none';
     document.getElementById('pc-info').innerHTML = '';
     const ph = document.getElementById('pc-photos');
-    ph.style.display = ''; ph.innerHTML = '<div class="pc-photos-empty">Ищу фото и информацию…</div>';
+    ph.style.display = ''; ph.innerHTML = '<div class="pc-photos-empty">Finding photos and info…</div>';
     document.getElementById('pc-route').onclick = () => { placeCard.classList.remove('open'); buildRoute(lat, lng); };
     document.getElementById('pc-fav').onclick = () => askSaveFav(lat, lng);
     loadPlaceData(lat, lng, titleHint);
@@ -803,19 +803,19 @@
   async function loadPlaceData(lat, lng, titleHint) {
     let title = titleHint || '', typeName = '', addr = '', extra = {};
     try {
-      const d = await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ru&zoom=18&extratags=1`)).json();
+      const d = await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=en&zoom=18&extratags=1`)).json();
       extra = d.extratags || {};
       addr = formatAddress(d.address);
-      if (!title) title = d.name || (d.address && d.address.road) || 'Место';
+      if (!title) title = d.name || (d.address && d.address.road) || 'Place';
       typeName = ruType(d.type) || ruType(extra.tourism) || ruType(extra.amenity) || '';
     } catch (e) {}
 
     let wiki = null;
     try {
-      let wlang = 'ru', wtitle = null;
+      let wlang = 'en', wtitle = null;
       if (extra.wikipedia && extra.wikipedia.includes(':')) { const parts = extra.wikipedia.split(':'); wlang = parts.shift(); wtitle = parts.join(':'); }
       if (!wtitle) {
-        const gs = await (await fetch(`https://ru.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}%7C${lng}&gsradius=250&gslimit=1&format=json&origin=*`)).json();
+        const gs = await (await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}%7C${lng}&gsradius=250&gslimit=1&format=json&origin=*`)).json();
         const g = gs.query && gs.query.geosearch && gs.query.geosearch[0];
         if (g) wtitle = g.title;
       }
@@ -841,7 +841,7 @@
   // --- Разбор часов работы OSM (opening_hours) и вычисление статуса ---
   const OH_DAY = { Mo: 1, Tu: 2, We: 3, Th: 4, Fr: 5, Sa: 6, Su: 0 };
   const OH_ORDER = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-  const OH_NAMES = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+  const OH_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   function parseOH(value) {
     if (/^24\s*\/\s*7$/.test(value.trim())) return { always: true };
     const week = [[], [], [], [], [], [], []];
@@ -895,21 +895,21 @@
   function statusLabel(st, now) {
     if (!st) return null;
     now = now || new Date();
-    if (st.state === 'perm') return { text: 'Закрыто навсегда', cls: 'perm' };
+    if (st.state === 'perm') return { text: 'Permanently closed', cls: 'perm' };
     if (st.state === 'open') {
-      if (st.always) return { text: 'Открыто круглосуточно', cls: 'open' };
+      if (st.always) return { text: 'Open 24 hours', cls: 'open' };
       const soon = st.until && (st.until - now) <= 3600000;
-      return { text: (soon ? 'Скоро закроется' : 'Открыто') + ' · до ' + ohHM(st.until), cls: soon ? 'soon' : 'open' };
+      return { text: (soon ? 'Closing soon' : 'Open') + ' · until ' + ohHM(st.until), cls: soon ? 'soon' : 'open' };
     }
     if (st.next) {
       const sameDay = st.next.getDate() === now.getDate() && (st.next - now) < 86400000;
-      return { text: 'Закрыто · откроется ' + (sameDay ? 'в ' : OH_NAMES[st.next.getDay()] + ' ') + ohHM(st.next), cls: 'closed' };
+      return { text: 'Closed · opens ' + (sameDay ? 'at ' : OH_NAMES[st.next.getDay()] + ' ') + ohHM(st.next), cls: 'closed' };
     }
-    return { text: 'Закрыто', cls: 'closed' };
+    return { text: 'Closed', cls: 'closed' };
   }
 
   function renderPlaceCard(p) {
-    document.getElementById('pc-title').textContent = p.title || 'Место';
+    document.getElementById('pc-title').textContent = p.title || 'Place';
     document.getElementById('pc-type').textContent = p.typeName || '';
     const lbl = statusLabel(ohStatus(p.extra.opening_hours));
     const statusEl = document.getElementById('pc-status');
@@ -917,7 +917,7 @@
     else statusEl.style.display = 'none';
     const desc = document.getElementById('pc-desc');
     if (p.wiki && p.wiki.extract) {
-      desc.innerHTML = escapeHtml(p.wiki.extract) + (p.wiki.url ? ' <a href="' + p.wiki.url + '" target="_blank" rel="noopener">Википедия →</a>' : '');
+      desc.innerHTML = escapeHtml(p.wiki.extract) + (p.wiki.url ? ' <a href="' + p.wiki.url + '" target="_blank" rel="noopener">Wikipedia →</a>' : '');
       desc.style.display = '';
     } else desc.style.display = 'none';
 
@@ -949,12 +949,12 @@
       chip.onclick = (e) => { if (e.target.classList.contains('x')) delFav(i); else buildRoute(f.lat, f.lng); };
       favRow.appendChild(chip);
     });
-    const add = document.createElement('button'); add.className = 'chip add'; add.textContent = '＋ Сюда';
+    const add = document.createElement('button'); add.className = 'chip add'; add.textContent = '＋ Here';
     add.onclick = () => { const c = map.getCenter(); askSaveFav(c.lat, c.lng); };
     favRow.appendChild(add);
   }
   function askSaveFav(lat, lng) {
-    const name = prompt('Название места (например: Дом, Работа, Дача):');
+    const name = prompt('Place name (e.g. Home, Work, Gym):');
     if (!name || !name.trim()) return;
     const favs = loadFavs(); favs.push({ name: name.trim(), lat, lng }); saveFavs(favs); renderFavs();
   }
@@ -1028,13 +1028,13 @@
     if (u) {
       const first = escapeHtml((u.name || u.email || '').split(' ')[0]);
       const av = u.picture ? '<img class="lp-avatar" src="' + u.picture + '" alt="" referrerpolicy="no-referrer">' : '';
-      greet.innerHTML = av + 'С возвращением, <b>' + first + '</b>';
-      loginBtn.textContent = 'Выйти';
+      greet.innerHTML = av + 'Welcome back, <b>' + first + '</b>';
+      loginBtn.textContent = 'Sign out';
       loginBtn.onclick = () => signOut();
       if (regBtn) regBtn.style.display = 'none';
     } else {
       greet.textContent = '';
-      loginBtn.textContent = 'Войти';
+      loginBtn.textContent = 'Sign in';
       loginBtn.onclick = () => openAuth();
       if (regBtn) regBtn.style.display = '';
     }
@@ -1091,7 +1091,7 @@
       localStorage.setItem('gp_user', JSON.stringify({ name: p.name, email: p.email, picture: p.picture, sub: p.sub }));
       authModal.classList.remove('open');
       refreshGreet();
-    } catch (e) { authError.textContent = 'Не удалось войти. Попробуйте ещё раз.'; }
+    } catch (e) { authError.textContent = 'Sign-in failed. Please try again.'; }
   }
 
   // Инициализация Google Identity Services (ждём загрузку библиотеки accounts.google.com/gsi)
@@ -1101,7 +1101,7 @@
     google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: onGoogleCredential, auto_select: false });
     if (!gbtnRendered) {
       const el = document.getElementById('gbtn');
-      if (el) { google.accounts.id.renderButton(el, { theme: 'filled_blue', size: 'large', shape: 'pill', text: 'continue_with', logo_alignment: 'left', locale: 'ru', width: 300 }); gbtnRendered = true; }
+      if (el) { google.accounts.id.renderButton(el, { theme: 'filled_blue', size: 'large', shape: 'pill', text: 'continue_with', logo_alignment: 'left', locale: 'en', width: 300 }); gbtnRendered = true; }
     }
   }
   initGoogle();
