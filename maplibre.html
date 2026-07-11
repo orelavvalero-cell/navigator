@@ -428,6 +428,8 @@
   const roundDistWords = m => (m < 150 ? Math.round(m/50)*50 : Math.round(m/100)*100) + ' meters';
   const lower1 = s => s ? s.charAt(0).toLowerCase() + s.slice(1) : s;
   const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  // Безопасная ссылка: только http/https (блокирует javascript:, data: и т.п. — защита от XSS)
+  const safeUrl = u => /^https?:\/\//i.test(u || '') ? String(u).replace(/["'<>]/g, encodeURIComponent) : '';
   function arrowFor(t) {
     if ([1,2,3].includes(t)) return '▶';
     if ([4,5,6].includes(t)) return '⚑';
@@ -917,7 +919,8 @@
     else statusEl.style.display = 'none';
     const desc = document.getElementById('pc-desc');
     if (p.wiki && p.wiki.extract) {
-      desc.innerHTML = escapeHtml(p.wiki.extract) + (p.wiki.url ? ' <a href="' + p.wiki.url + '" target="_blank" rel="noopener">Wikipedia →</a>' : '');
+      const wurl = safeUrl(p.wiki.url);
+      desc.innerHTML = escapeHtml(p.wiki.extract) + (wurl ? ' <a href="' + wurl + '" target="_blank" rel="noopener">Wikipedia →</a>' : '');
       desc.style.display = '';
     } else desc.style.display = 'none';
 
@@ -925,9 +928,11 @@
     if (p.addr) rows.push(iconRow(ICONS.pin, escapeHtml(p.addr)));
     if (p.extra.opening_hours) rows.push(iconRow(ICONS.clock, escapeHtml(p.extra.opening_hours)));
     const phone = p.extra.phone || p.extra['contact:phone'];
-    if (phone) rows.push(iconRow(ICONS.phone, '<a href="tel:' + phone.replace(/\s/g, '') + '">' + escapeHtml(phone) + '</a>'));
-    const site = p.extra.website || p.extra['contact:website'] || p.extra.url;
-    if (site) rows.push(iconRow(ICONS.globe, '<a href="' + site + '" target="_blank" rel="noopener">' + escapeHtml(site.replace(/^https?:\/\//, '').replace(/\/$/, '').slice(0, 42)) + '</a>'));
+    if (phone) rows.push(iconRow(ICONS.phone, '<a href="tel:' + phone.replace(/[^0-9+]/g, '') + '">' + escapeHtml(phone) + '</a>'));
+    const rawSite = p.extra.website || p.extra['contact:website'] || p.extra.url || '';
+    const site = safeUrl(rawSite);
+    if (site) rows.push(iconRow(ICONS.globe, '<a href="' + site + '" target="_blank" rel="noopener nofollow">' + escapeHtml(rawSite.replace(/^https?:\/\//, '').replace(/\/$/, '').slice(0, 42)) + '</a>'));
+    else if (rawSite) rows.push(iconRow(ICONS.globe, escapeHtml(rawSite.slice(0, 42))));
     document.getElementById('pc-info').innerHTML = rows.join('');
 
     const ph = document.getElementById('pc-photos');
@@ -1027,7 +1032,8 @@
     const regBtn = document.getElementById('btn-auth-open2');
     if (u) {
       const first = escapeHtml((u.name || u.email || '').split(' ')[0]);
-      const av = u.picture ? '<img class="lp-avatar" src="' + u.picture + '" alt="" referrerpolicy="no-referrer">' : '';
+      const pic = safeUrl(u.picture);
+      const av = pic ? '<img class="lp-avatar" src="' + pic + '" alt="" referrerpolicy="no-referrer">' : '';
       greet.innerHTML = av + 'Welcome back, <b>' + first + '</b>';
       loginBtn.textContent = 'Sign out';
       loginBtn.onclick = () => signOut();
