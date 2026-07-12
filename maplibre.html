@@ -443,7 +443,7 @@
   // ============================================================
   //                   МОЁ МЕСТОПОЛОЖЕНИЕ (GPS)
   // ============================================================
-  let myPosition = null, followMode = true, lastHeading = null, lastNavPos = null;
+  let myPosition = null, followMode = true, lastHeading = null, lastNavPos = null, lastFollowPos = null;
   let meMarker = null, meAdded = false;
 
   function makeMeMarker() {
@@ -484,7 +484,11 @@
         } else {
           meMarker.setLngLat([lng, lat]);
           if (lastHeading != null) meMarker.setRotation(lastHeading);
-          if (first || followMode) map.easeTo({ center: [lng, lat], zoom: first ? 15.5 : map.getZoom(), duration: 700 });
+          // Доезжаем за GPS только при реальном перемещении (>15 м). Стоим на месте — карта замерла, пузырьки не «плавают».
+          if (first) { map.easeTo({ center: [lng, lat], zoom: 15.5, duration: 700 }); lastFollowPos = [lat, lng]; }
+          else if (followMode && (!lastFollowPos || distM(lastFollowPos, [lat, lng]) > 15)) {
+            map.easeTo({ center: [lng, lat], zoom: map.getZoom(), duration: 700 }); lastFollowPos = [lat, lng];
+          }
         }
     }, (err) => console.warn('GPS:', err.message), { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
   }
