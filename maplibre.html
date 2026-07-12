@@ -788,13 +788,18 @@
 
   // ===== Фото-пузырьки известных мест (как в Google Maps): только места с картинкой =====
   const photoPins = [];
-  let photoTimer = null;
+  let photoTimer = null, lastPinCenter = null, lastPinZoom = null;
   function clearPhotoPins() { photoPins.forEach(m => m.remove()); photoPins.length = 0; }
   async function loadPhotoPins() {
     if (navActive) { clearPhotoPins(); return; }
-    if (map.getZoom() < 14) { clearPhotoPins(); return; }   // показываем только при достаточном приближении
+    const z = map.getZoom();
+    if (z < 14) { clearPhotoPins(); lastPinCenter = null; return; }   // показываем только при достаточном приближении
     const c = map.getCenter(), ne = map.getBounds().getNorthEast();
     const radius = Math.min(10000, Math.max(500, Math.round(distM([c.lat, c.lng], [ne.lat, ne.lng]))));
+    // НЕ перезагружаем, если сдвинулись мало (напр. карта чуть подъехала за GPS) — пины остаются на местах
+    if (photoPins.length && lastPinCenter && Math.abs(z - lastPinZoom) < 0.6
+        && distM([c.lat, c.lng], [lastPinCenter.lat, lastPinCenter.lng]) < radius * 0.5) return;
+    lastPinCenter = { lat: c.lat, lng: c.lng }; lastPinZoom = z;
     try {
       const url = `https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${c.lat}%7C${c.lng}&ggsradius=${radius}&ggslimit=40&prop=pageimages|coordinates&piprop=thumbnail&pithumbsize=120&format=json&origin=*`;
       const data = await (await fetch(url)).json();
