@@ -787,27 +787,32 @@
   });
 
   // ===== Фото-пузырьки известных мест (как в Google Maps): только места с картинкой =====
-  const photoPins = [];
+  const photoPins = new Map();   // pageid -> Marker: создаём ОДИН раз, дальше не трогаем — стоит на своём месте
   let photoTimer = null, lastPinCenter = null, lastPinZoom = null;
-  function clearPhotoPins() { photoPins.forEach(m => m.remove()); photoPins.length = 0; }
+  function clearPhotoPins() { photoPins.forEach(m => m.remove()); photoPins.clear(); }
   async function loadPhotoPins() {
     if (navActive) { clearPhotoPins(); return; }
     const z = map.getZoom();
     if (z < 14) { clearPhotoPins(); lastPinCenter = null; return; }   // показываем только при достаточном приближении
     const c = map.getCenter(), ne = map.getBounds().getNorthEast();
     const radius = Math.min(10000, Math.max(500, Math.round(distM([c.lat, c.lng], [ne.lat, ne.lng]))));
-    // НЕ перезагружаем, если сдвинулись мало (напр. карта чуть подъехала за GPS) — пины остаются на местах
-    if (photoPins.length && lastPinCenter && Math.abs(z - lastPinZoom) < 0.6
-        && distM([c.lat, c.lng], [lastPinCenter.lat, lastPinCenter.lng]) < radius * 0.5) return;
+    // не дёргаем API при мелких сдвигах (слежение за GPS); при этом пины НЕ трогаем — они остаются
+    if (lastPinCenter && Math.abs(z - lastPinZoom) < 0.5
+        && distM([c.lat, c.lng], [lastPinCenter.lat, lastPinCenter.lng]) < radius * 0.35) return;
     lastPinCenter = { lat: c.lat, lng: c.lng }; lastPinZoom = z;
     try {
-      const url = `https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${c.lat}%7C${c.lng}&ggsradius=${radius}&ggslimit=40&prop=pageimages|coordinates&piprop=thumbnail&pithumbsize=120&format=json&origin=*`;
+      const url = `https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${c.lat}%7C${c.lng}&ggsradius=${radius}&ggslimit=50&prop=pageimages|coordinates&piprop=thumbnail&pithumbsize=120&format=json&origin=*`;
       const data = await (await fetch(url)).json();
       const pages = data.query && data.query.pages ? Object.values(data.query.pages) : [];
-      clearPhotoPins();
-      let n = 0;
+      // убираем только совсем далёкие (уехали в другой район), остальные остаются на местах
+      photoPins.forEach((mk, id) => {
+        const ll = mk.getLngLat();
+        if (distM([c.lat, c.lng], [ll.lat, ll.lng]) > radius * 2.5) { mk.remove(); photoPins.delete(id); }
+      });
+      // добавляем только НОВЫЕ места (уже показанные не пересоздаём — они не мигают и не двигаются)
       pages.forEach(p => {
-        if (n >= 16 || !p.thumbnail || !p.coordinates || !p.coordinates[0]) return;   // только места С фото
+        if (photoPins.size >= 24 || photoPins.has(p.pageid)) return;
+        if (!p.thumbnail || !p.coordinates || !p.coordinates[0]) return;   // только места С фото
         const co = p.coordinates[0], thumb = safeUrl(p.thumbnail.source);
         if (!thumb) return;
         const el = document.createElement('div');
@@ -815,12 +820,11 @@
         el.title = p.title;
         el.innerHTML = '<img src="' + thumb + '" alt="" referrerpolicy="no-referrer" loading="lazy">';
         el.onclick = () => openPlaceCard(co.lat, co.lon, p.title);
-        photoPins.push(new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([co.lon, co.lat]).addTo(map));
-        n++;
+        photoPins.set(p.pageid, new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([co.lon, co.lat]).addTo(map));
       });
     } catch (e) {}
   }
-  map.on('moveend', () => { clearTimeout(photoTimer); photoTimer = setTimeout(loadPhotoPins, 500); });
+  map.on('moveend', () => { clearTimeout(photoTimer); photoTimer = setTimeout(loadPhotoPins, 450); });
 
   function openPlaceCard(lat, lng, titleHint) {
     pcLat = lat; pcLng = lng;
