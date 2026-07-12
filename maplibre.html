@@ -79,6 +79,11 @@
 
     /* Маркер «я» (стрелка направления) */
     .me-marker svg { display: block; filter: drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
+    /* Фото-пузырёк места (как в Google Maps) */
+    .photo-pin { position: relative; width: 46px; height: 46px; cursor: pointer; }
+    .photo-pin img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 2px 7px rgba(0,0,0,.4); display: block; background: #e5e7eb; }
+    .photo-pin::after { content: ''; position: absolute; left: 50%; bottom: -5px; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #fff; }
+    .photo-pin:hover img { border-color: #2563eb; }
 
     /* План маршрута */
     .route-info {
@@ -670,6 +675,7 @@
   document.getElementById('btn-start').onclick = () => {
     if (!currentRoute) return;
     navActive = true; followMode = true; navSpoken = {}; offRouteCount = 0;
+    clearPhotoPins();
     document.body.classList.remove('route-open'); document.body.classList.add('navigating');
     speak('Starting navigation');
     if (myPosition) {
@@ -779,6 +785,37 @@
     const named = map.queryRenderedFeatures(e.point).find(f => f.properties && f.properties.name);
     openPlaceCard(e.lngLat.lat, e.lngLat.lng, named ? named.properties.name : null);
   });
+
+  // ===== Фото-пузырьки известных мест (как в Google Maps): только места с картинкой =====
+  const photoPins = [];
+  let photoTimer = null;
+  function clearPhotoPins() { photoPins.forEach(m => m.remove()); photoPins.length = 0; }
+  async function loadPhotoPins() {
+    if (navActive) { clearPhotoPins(); return; }
+    if (map.getZoom() < 14) { clearPhotoPins(); return; }   // показываем только при достаточном приближении
+    const c = map.getCenter(), ne = map.getBounds().getNorthEast();
+    const radius = Math.min(10000, Math.max(500, Math.round(distM([c.lat, c.lng], [ne.lat, ne.lng]))));
+    try {
+      const url = `https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${c.lat}%7C${c.lng}&ggsradius=${radius}&ggslimit=40&prop=pageimages|coordinates&piprop=thumbnail&pithumbsize=120&format=json&origin=*`;
+      const data = await (await fetch(url)).json();
+      const pages = data.query && data.query.pages ? Object.values(data.query.pages) : [];
+      clearPhotoPins();
+      let n = 0;
+      pages.forEach(p => {
+        if (n >= 16 || !p.thumbnail || !p.coordinates || !p.coordinates[0]) return;   // только места С фото
+        const co = p.coordinates[0], thumb = safeUrl(p.thumbnail.source);
+        if (!thumb) return;
+        const el = document.createElement('div');
+        el.className = 'photo-pin';
+        el.title = p.title;
+        el.innerHTML = '<img src="' + thumb + '" alt="" referrerpolicy="no-referrer" loading="lazy">';
+        el.onclick = () => openPlaceCard(co.lat, co.lon, p.title);
+        photoPins.push(new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([co.lon, co.lat]).addTo(map));
+        n++;
+      });
+    } catch (e) {}
+  }
+  map.on('moveend', () => { clearTimeout(photoTimer); photoTimer = setTimeout(loadPhotoPins, 500); });
 
   function openPlaceCard(lat, lng, titleHint) {
     pcLat = lat; pcLng = lng;
