@@ -457,6 +457,7 @@
     locate: _svg('<circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>'),
     route:  _svg('<polygon points="3 11 22 2 13 21 11 13 3 11"/>'),
     star:   _svg('<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>'),
+    starFilled: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
     x:      _svg('<path d="M18 6 6 18M6 6l12 12"/>'),
     pin:    _svg('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'),
     clock:  _svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
@@ -854,7 +855,7 @@
   const iconRow = (icon, html) => '<div class="pc-row">' + icon + '<span>' + html + '</span></div>';
 
   const placeCard = document.getElementById('place-card');
-  let pcLat = null, pcLng = null;
+  let pcLat = null, pcLng = null, pcTitle = '';
   document.getElementById('pc-route').innerHTML = ICONS.route + '<span>Directions</span>';
   document.getElementById('pc-fav').innerHTML = ICONS.star + '<span>Save</span>';
   document.getElementById('pc-close').innerHTML = ICONS.x;
@@ -908,7 +909,7 @@
   map.on('moveend', () => { clearTimeout(photoTimer); photoTimer = setTimeout(loadPhotoPins, 450); });
 
   function openPlaceCard(lat, lng, titleHint) {
-    pcLat = lat; pcLng = lng;
+    pcLat = lat; pcLng = lng; pcTitle = titleHint || 'Place';
     placeCard.classList.add('open'); placeCard.scrollTop = 0;
     document.getElementById('pc-title').textContent = titleHint || 'Loading…';
     document.getElementById('pc-type').textContent = '';
@@ -918,8 +919,23 @@
     const ph = document.getElementById('pc-photos');
     ph.style.display = ''; ph.innerHTML = '<div class="pc-photos-empty">Finding photos and info…</div>';
     document.getElementById('pc-route').onclick = () => { placeCard.classList.remove('open'); buildRoute(lat, lng); };
-    document.getElementById('pc-fav').onclick = () => askSaveFav(lat, lng);
+    document.getElementById('pc-fav').onclick = toggleFav;
+    updateFavBtn();
     loadPlaceData(lat, lng, titleHint);
+  }
+
+  // Звезда в карточке места: тап — сохранить/убрать сразу (как в Google Maps), без запроса имени
+  function findFavIndex(lat, lng) { return loadFavs().findIndex(f => distM([f.lat, f.lng], [lat, lng]) < 35); }
+  function updateFavBtn() {
+    const saved = pcLat != null && findFavIndex(pcLat, pcLng) >= 0;
+    document.getElementById('pc-fav').innerHTML = (saved ? ICONS.starFilled : ICONS.star) + '<span>' + (saved ? 'Saved' : 'Save') + '</span>';
+  }
+  function toggleFav() {
+    if (pcLat == null) return;
+    const favs = loadFavs();
+    const idx = favs.findIndex(f => distM([f.lat, f.lng], [pcLat, pcLng]) < 35);
+    if (idx >= 0) favs.splice(idx, 1); else favs.push({ name: pcTitle || 'Place', lat: pcLat, lng: pcLng });
+    saveFavs(favs); renderFavs(); updateFavBtn();
   }
 
   async function loadPlaceData(lat, lng, titleHint) {
@@ -1032,6 +1048,7 @@
 
   function renderPlaceCard(p) {
     document.getElementById('pc-title').textContent = p.title || 'Place';
+    pcTitle = p.title || pcTitle; updateFavBtn();   // точное имя для сохранения + актуальный вид звезды
     document.getElementById('pc-type').textContent = p.typeName || '';
     const lbl = statusLabel(ohStatus(p.extra.opening_hours));
     const statusEl = document.getElementById('pc-status');
