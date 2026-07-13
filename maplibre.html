@@ -62,6 +62,21 @@
     #fabs { position: absolute; right: 16px; bottom: 40px; z-index: 10; display: flex; flex-direction: column; gap: 10px; }
     body.route-open #fabs { bottom: 210px; }
     body.navigating #fabs { bottom: 150px; }
+    /* Saved places (panel in navigator style) */
+    body.favs-open #fabs { display: none; }
+    .favs { position: absolute; bottom: 0; left: 0; right: 0; z-index: 15; max-width: 680px; margin: 0 auto; background: var(--panel); color: var(--text); border-radius: var(--radius) var(--radius) 0 0; padding: 16px 20px 20px; box-shadow: 0 -4px 20px var(--shadow); display: none; max-height: 70vh; overflow-y: auto; }
+    .favs.open { display: block; }
+    .favs .close { position: absolute; top: 12px; right: 14px; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); }
+    .favs-title { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+    .favs-list { display: flex; flex-direction: column; }
+    .fav-item { display: flex; align-items: center; gap: 10px; padding: 12px 4px; border-bottom: 1px solid var(--border); cursor: pointer; }
+    .fav-item svg { width: 18px; height: 18px; color: var(--muted); flex: 0 0 auto; }
+    .fav-item .fav-name { flex: 1; font-size: 15px; }
+    .fav-item .fav-del { background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 4px 8px; }
+    .fav-plus { width: 18px; text-align: center; color: var(--accent); font-size: 20px; flex: 0 0 auto; }
+    .fav-add { border-bottom: none; }
+    .fav-add .fav-name { color: var(--accent); }
+    .favs-empty { color: var(--muted); font-size: 14px; padding: 6px 4px 12px; line-height: 1.5; }
     .fab { /* стандартная кнопка HTML */ }
     .fab svg { width: 23px; height: 23px; display: block; }
     /* Погода */
@@ -319,7 +334,6 @@
       <input id="search" type="text" placeholder="Where to? Enter an address…" autocomplete="off" />
       <button id="btn-go">Search</button>
     </div>
-    <div class="chip-row" id="fav-row"></div>
   </div>
   <div class="suggestions" id="suggestions"></div>
 
@@ -337,6 +351,7 @@
     <button class="fab" id="btn-sat" title="Satellite"></button>
     <button class="fab" id="btn-theme" title="Day / Night"></button>
     <button class="fab" id="btn-voice" title="Voice"></button>
+    <button class="fab" id="btn-favs" title="Saved places"></button>
     <button class="fab" id="btn-locate" title="Where am I"></button>
   </div>
 
@@ -360,6 +375,14 @@
   <div id="nav-bottom">
     <div><span id="nav-eta">—</span> · <span id="nav-remain">—</span></div>
     <button id="btn-stop">Stop</button>
+  </div>
+
+  <!-- Saved places -->
+  <div id="favs-panel" class="favs">
+    <button class="close" id="favs-close">✕</button>
+    <div class="favs-title">Saved places</div>
+    <div id="favs-list" class="favs-list"></div>
+    <div class="fav-item fav-add" id="favs-add"><span class="fav-plus">＋</span><span class="fav-name">Add current location</span></div>
   </div>
 
   <!-- Карточка места (фото + инфо, как в Google Maps) -->
@@ -1040,20 +1063,20 @@
   // ============================================================
   //                ИЗБРАННОЕ (localStorage)
   // ============================================================
-  const favRow = document.getElementById('fav-row');
   const loadFavs = () => { try { return JSON.parse(localStorage.getItem('nav_favs')) || []; } catch { return []; } };
   const saveFavs = (f) => localStorage.setItem('nav_favs', JSON.stringify(f));
+  const favsPanel = document.getElementById('favs-panel');
   function renderFavs() {
-    const favs = loadFavs(); favRow.innerHTML = '';
+    const favs = loadFavs(), list = document.getElementById('favs-list');
+    list.innerHTML = '';
+    if (!favs.length) { list.innerHTML = '<div class="favs-empty">No saved places yet. Tap a place → Save, or add your current location below.</div>'; return; }
     favs.forEach((f, i) => {
-      const chip = document.createElement('button'); chip.className = 'chip';
-      chip.innerHTML = '⭐ ' + escapeHtml(f.name) + ' <span class="x">✕</span>';
-      chip.onclick = (e) => { if (e.target.classList.contains('x')) delFav(i); else buildRoute(f.lat, f.lng); };
-      favRow.appendChild(chip);
+      const row = document.createElement('div'); row.className = 'fav-item';
+      row.innerHTML = ICONS.pin + '<span class="fav-name">' + escapeHtml(f.name) + '</span><button class="fav-del" title="Remove">✕</button>';
+      row.querySelector('.fav-del').onclick = (e) => { e.stopPropagation(); delFav(i); };
+      row.onclick = () => { closeFavs(); buildRoute(f.lat, f.lng); };
+      list.appendChild(row);
     });
-    const add = document.createElement('button'); add.className = 'chip add'; add.textContent = '＋ Here';
-    add.onclick = () => { const c = map.getCenter(); askSaveFav(c.lat, c.lng); };
-    favRow.appendChild(add);
   }
   function askSaveFav(lat, lng) {
     const name = prompt('Place name (e.g. Home, Work, Gym):');
@@ -1061,6 +1084,12 @@
     const favs = loadFavs(); favs.push({ name: name.trim(), lat, lng }); saveFavs(favs); renderFavs();
   }
   function delFav(i) { const favs = loadFavs(); favs.splice(i, 1); saveFavs(favs); renderFavs(); }
+  function openFavs() { renderFavs(); if (placeCard) placeCard.classList.remove('open'); document.body.classList.add('favs-open'); favsPanel.classList.add('open'); }
+  function closeFavs() { document.body.classList.remove('favs-open'); favsPanel.classList.remove('open'); }
+  document.getElementById('btn-favs').innerHTML = ICONS.star;
+  document.getElementById('btn-favs').onclick = openFavs;
+  document.getElementById('favs-close').onclick = closeFavs;
+  document.getElementById('favs-add').onclick = () => { if (!myPosition) { alert('Your location is not available yet (allow GPS access).'); return; } askSaveFav(myPosition[0], myPosition[1]); };
   document.getElementById('btn-fav').onclick = () => { if (destLatLng) askSaveFav(destLatLng[0], destLatLng[1]); };
   renderFavs();
 
